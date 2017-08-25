@@ -1,9 +1,7 @@
 function varargout=sml1h_findSeq(what,varargin);
 
-%baseDir = '/Users/eberlot/Documents/Data/SuperMotorLearning/stimuli_struct';
-baseDir = 'C:\Nicola\SuperMotorLearning\data';
-baseDir = '/Users/nicola/Documents/MATLAB/sml';
-
+baseDir = '/Users/eberlot/Documents/Data/SuperMotorLearning/stimuli_struct';
+%baseDir = 'C:\Nicola\SuperMotorLearning\data';
 cd (baseDir);
 rng('shuffle');
 switch (what)
@@ -60,7 +58,7 @@ switch (what)
         
     case 'featureModels'            % Select sequences based on criteria imposed, correlations from feature models
         
-        load('SeqAll.mat','D','trip');
+        load('SeqAll.mat','D','trip');  % sequences
         A = load('sequenceType.mat');   % all possible doubles, triplets
         
         SeqFinal = {};
@@ -299,7 +297,7 @@ switch (what)
             if TransinCom > 3
             else
                 continue
-            end
+            end     % is this end here in place? Shouldn't it be at the end?
             
             % How often is each chunk used in the sequences
             
@@ -350,10 +348,6 @@ switch (what)
             Dist = addstruct(Dist,c);
             
             
-            
-            
-            
-            
             %all correlations have to be under 0.6 and
             %can't be NaNs
             if sum((c.CorTest<0.6)) == 3 & sum(isnan(c.CorTest)) == 0
@@ -394,7 +388,7 @@ switch (what)
             clear c
             %if we get more than a certain amount of different good
             %sequences we can save them
-            if size(SeqFinal,2) >4
+            if size(SeqFinal,2) >9
                 good = 1;
             end
             

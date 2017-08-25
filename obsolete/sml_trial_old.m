@@ -1,4 +1,5 @@
-function [D]=sml_trial(MOV,D,fig,varargin)
+function [D]=sml_trial_old(MOV,D,fig,varargin)
+
 
 sample		= 5;
 forceThres	= 0.25;
@@ -23,7 +24,8 @@ F			= (MOV(:,4:end));
 F			= smooth_kernel(F,4);
 vF			= velocity_discr(F,2);
 
-indx = [1:5; 6:10];  % row: left/right hand; column: 1-5 fing
+indx = [6 7 8 9 10; 1 2 3 4 5];  % row: left/right hand; column: 1-5 fing
+% need to switch how hands are recorded
 
 
 % find out the number of finger presses by counting "response" fields
@@ -57,39 +59,65 @@ instr_tot = length(find(AllInstr>0));   % number of finger presses instructed
 
 D.numPress=press_tot;
 
+if (press_tot == 0) || (press_tot ~= instr_tot) || (MOV(end,1) == 4 || MOV(end,1) ==5)   % if forces not recorded until end of trial - state 4 or 5 (instead of 7/8)
+   
+    D.peakForceTime = NaN(1,9);
+    D.peakForceAmount = NaN(1,9);
+    D.meanForce=NaN;
+else
     
     for press = 0 : (press_tot - 1)
         
         pressName   = ['D.pressTime' , num2str(press) ];
-        FingerName  = ['D.press' , num2str(press) ];        
-        PressIdx(:,press+1)   = eval(pressName);
+        releaseName = ['D.releaseTime' , num2str(press) ];
+        FingerName  = ['D.press' , num2str(press) ];
+        
+        PressIdx(:,press+1)   = .5* eval(pressName);
+        ReleaseIdx(:,press+1) = .5* eval(releaseName);
         
     end
+    
+    for press = 1 : press_tot
+        fing_indx =  AllResp(press);
+        hand_indx =  D.hand;
+        fing = indx(hand_indx,fing_indx);
+        
+        % Find the peaks in the force trace and record average force and pacing
+        [i j] = max(F(PressIdx(press):ReleaseIdx(press),fing)); 
+        % peak force - time
+        k = find(F(:,fing)==i);
+        
+        if isempty(k)
+            k=0;
+        end
+        
+        peakHeight(press) = i;
+        peakTime(press) = k*2;
+        
+    end
+    
+    if press_tot == 3    % for chunks - so it is the same for seq and chunks
+        peakHeight(4:9)=0;
+        peakTime(4:9)=0;
+    end
+    
+    % extract peak forces time and amount
+    D.peakForceTime = peakTime;
+    D.peakForceAmount = peakHeight;    
+    D.meanForce=mean(peakHeight);
+
     
     % ------------------------------------------------
     
     % Display trial
     if (fig>0)
-        figure(1)
-        subplot(2,1,1)
-        
-        if D.hand==1
-            plot(t,F(:,1:5),'LineWidth',2);
-            title('Force traces for presses of LEFT hand');
-        else
-            plot(t,F(:,6:10),'LineWidth',2);
-            title('Force traces for presses of RIGHT hand');
-        end
-       
+        plot(t,F);
         hold on;
-        drawline(PressIdx,'dir','vert');
+        plot(peakTime,peakHeight,'k*');
+        %plot(t(peakTime(1:press_tot)),peakHeight(1:press_tot),'k*');
         
-        legend({'thumb','index','middle','ring','little'})
+        title(['Force for presses of' handnames(D.hand)]);
         hold off;
-        
-        subplot(2,1,2)
-        plot(t,state,'LineWidth',2);
-        ylim([1 8]);
         keyboard;
     end
-end
+end;
