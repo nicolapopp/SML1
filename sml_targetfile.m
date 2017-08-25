@@ -261,7 +261,7 @@ switch what
 
     Trials = 1:24;       
 
-    runs = 80;
+    runs = 88;
 
     for e = 1:runs
 

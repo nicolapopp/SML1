@@ -1,4 +1,4 @@
-function varargout=sml1_imana(what,varargin)
+function varargout=sml1_imana_temp2(what,varargin)
 
 % ------------------------- Directories -----------------------------------
 baseDir         ='/Users/eberlot/Documents/Data/SuperMotorLearning';
@@ -132,8 +132,7 @@ NiiRawName{1} = {'170718114530DST131221107523418932',...
                  '170808113354DST131221107523418932'};
 NiiRawName{2} = {'170725124629DST131221107523418932',...
                  '170801131823DST131221107523418932',...
-                 '170801113315DST131221107523418932',...
-                 '170815122423DST131221107523418932'};
+                 '170801113315DST131221107523418932'};
 NiiRawName{3}  = {'170815144204DST131221107523418932',...
                   '170822110530DST131221107523418932',...
                   '170823110924DST131221107523418932'};  
@@ -146,8 +145,7 @@ fscanNum{1}   = {[16 18 20 22 24 26 28 30 32 34],...
                  [16 18 20 22 24 26 28 30 32 34]};             
 fscanNum{2}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 15 17 33 35 23 25 27 31]};    % note - blocks 5 and 6 were repeated at the end (subject coughing)
+                 [11 13 15 17 19 21 23 25 27 29]};
 fscanNum{3}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 31 17 19 21 23 25 27 29],...  % note - block 3 was repeated at the end (problem with TR)
                  [11 13 15 17 19 21 23 25 27 29]};  
@@ -160,8 +158,7 @@ fieldNum{1}   = {[35,36],...
                  [35,36]};
 fieldNum{2}   = {[30,31],...
                  [30,31],...
-                 [30,31],...
-                 [36,37]};
+                 [30,31]};
 fieldNum{3}   = {[30,31],...
                  [32,33],...
                  [30,31]};
@@ -184,8 +181,6 @@ loc_AC     = {[-112 -165 -176],...
 %       dat files: 181,182,191(!!!),184,185,186,187,188,189,190
 % s02 - scan 4: run repeated / replaced 
 %       dat files: 192,193,194,195,202(!!!),197,198,199,200,201
-% s04 - scan 2: two runs repeated / replaced
-%       dat files: - ADD!!!!
 
 
 % ------------------------------ Analysis Cases --------------------------------
@@ -968,13 +963,8 @@ switch(what)
             J.timing.fmri_t0 = 1;
             
             L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
-            if (sn==2 & sessN==3)
-                uniqrun = [181,182,191,184,185,186,187,188,189,190];
-            elseif (sn==2 & sessN==4)
-                uniqrun = [192,193,194,195,202,197,198,199,200,201];
-            else
-                uniqrun = unique(L.BN);
-            end
+            uniqrun = unique(L.BN);
+            
             % Loop through runs. 
             for r = 1:numruns_task_sess                                            
                 R = getrow(L,L.BN==uniqrun(run_task(1,r))); % 1-8 func runs of the session
@@ -2658,7 +2648,7 @@ switch(what)
         % % save
         save(fullfile(regDir,sprintf('sess%d_LOC_reg_statsAllSeq.mat',sessN)),'-struct','To');
         fprintf('\nDone.\n')  
-    case 'ROI_beta_consist_witSess'                                           % OPTIONAL   :  Calculates pattern consistencies for each subject in roi across glms.
+    case 'ROI_patternconsistency'                                           % OPTIONAL   :  Calculates pattern consistencies for each subject in roi across glms.
         % pattern consistency for specified roi
         % Pattern consistency is a measure of the proportion of explained
         % beta variance across runs within conditions. 
@@ -2669,11 +2659,11 @@ switch(what)
         %
         % enter sn, region, glm #, beta: 0=betaW, 1=betaUW, 2=raw betas
         % (1) Set parameters
-        sessN = 1;
+        glm = 2;
         sn  = 1;
         roi = 2; % default LH primary motor cortex
-        beta = 'uw';  % raw / uw / mw -> MW performs the best!
-        removeMean = 'no'; % are we removing pattern means for patternconsistency?
+        beta = 1;  % RAW or UW betas produce the best effect
+        removeMean = 'yes'; % are we removing pattern means for patternconsistency?
         vararginoptions(varargin,{'sn','glm','roi','beta','removeMean'});
         
         if strcmp(removeMean,'yes')
@@ -2683,25 +2673,25 @@ switch(what)
   
         Rreturn=[];
         %========%
-        for s=sessN
-            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',s))); % loads in struct 'T'
+        for g=glm
+            T = load(fullfile(regDir,sprintf('glm%d_reg_betas.mat',g))); % loads in struct 'T'
             for r=roi
                 Rall=[]; %prep output variable
                 for s=sn
                     S = getrow(T,(T.SN==s & T.region==r));
-                    runs = 1:numruns_task_sess; % 8 func runs
+                    runs = 1:numruns(s);
                     switch(beta)
-                        case 'raw'
+                        case 0
                             betaW  = S.betaW{1}; 
-                        case 'uw'
+                        case 1
                             betaW  = S.betaUW{1}; 
-                        case 'mw'
+                        case 2
                             betaW  = S.betaRAW{1}; 
                     end
                     
                     % make vectors for pattern consistency func
-                    conditionVec = kron(ones(numel(runs),1),[1:12]');
-                    partition    = kron(runs',ones(12,1));
+                    conditionVec = kron(ones(numel(runs),1),[1:19]');
+                    partition    = kron(runs',ones(19,1));
                     % calculate the pattern consistency
                     R2   = rsa_patternConsistency(betaW,partition,conditionVec,'removeMean',keepmean);
                     Rall = [Rall,R2];
@@ -2710,138 +2700,23 @@ switch(what)
             end
         end
         varargout = {Rreturn};
-        fprintf('The consistency for %s betas in region %s is',beta,regname{roi});
         % output arranged such that each row is an roi, each col is subj
         
         %_______________    
-    case 'ROI_beta_consist_betwSess'
+    case 'ROI_betwSess_consist'
         % evaluate consistency of measures (psc, beta, z-scores) across
         % sessions for finger mapping
         
         sn  = 1;
-        sessN = 1;
-        reg = 1:7;
-        keepmean=0;
-        betaChoice = 'multi'; % options: uni / multi / raw
-        seq = 'untrained';
-        vararginoptions(varargin,{'sn','sessN','reg','betaChoice','keepmean','seq'});
+        roi = 2;
+        betaChoice = 'uni'; % options: uni / multi / raw
+        vararginoptions(varargin,{'sn','roi','betaChoice'});
 
-        
-       for  roi = reg;
         CS=[];  % separate per digit
         PS=[];  % across all digits
-        for sessN = 1:4; % per session
-            C=[];P=[];
-            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',sessN))); % loads region data (T)
         
-            switch (betaChoice)
-            case 'uni'
-                beta = T.betaUW;
-            case 'multi'
-                beta = T.betaW;
-            case 'raw'
-                beta = T.betaRAW;
-            end
-        
-            runs=1:numruns_task_sess;
-            conditionVec = kron(ones(numel(runs),1),[1:12]');
-            
-            switch(seq)
-                case 'trained'
-                    idx=1:6;
-                case 'untrained'
-                    idx=7:12;
-            end
-
-            %C.beta=beta{roi};   
-            for d = 1:6 %sequences
-                C.beta_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1);  % beta values for each digit (avrg across two blocks)
-                C.zscore_seq(d,:) = (C.beta_seq(d,:)-mean(C.beta_seq(d,:)))./std(C.beta_seq(d,:));
-                % C.psc_digit(d,:)=mean(median(max(beta{roi}(d,:)))/median(max(beta{roi}(6,:))),...
-               %     median(max(beta{roi}(d+6,:)))/median(max(beta{roi}(12,:))));  % mean of psc of two blocks - median response / intercept
-            end
-            
-            %C.zscore_seq = bsxfun(@rdivide,C.beta_seq,sqrt(T.resMS{roi}));
-           
-            C.seq_ind=[1:6]';
-            C.sessN=ones(6,1)*sessN;
-            C.roi=ones(6,1)*roi;
-            
-            
-            P.beta_mean=mean(C.beta_seq,1);   % mean pattern acros digit in each session
-            P.zscore_mean=mean(C.zscore_seq,1);
-            %P.zscore_mean=bsxfun(@rdivide,P.beta_mean,sqrt(T.resMS{roi}));
-            P.sessN=sessN;
-            P.roi=roi;
-            
-            CS=addstruct(CS,C);
-            PS=addstruct(PS,P);
-        end
-        
-        O.betas(roi,:) = mean(PS.beta_mean,2)';    % one value per session
-        O.zscore(roi,:) = mean(PS.zscore_mean,2)';
-        O.roi(roi,1) = roi;
-        
-        ind = indicatorMatrix('allpairs',([1:4]));  % betwSess indicator
-        for i=1:size(ind,1)
-            [i1 i2] = find(ind(i,:)~=0);
-            if keepmean == 0
-                Consist.beta(roi,i)=corr(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corr(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
-            elseif keepmean == 1
-                Consist.beta(roi,i)=corrN(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corrN(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
-            end
-        end
-        
-        Consist.beta_RSA(roi,1) = rsa_patternConsistency(CS.beta_seq,CS.sessN,CS.seq_ind,'removeMean',keepmean);
-        Consist.zscore_RSA(roi,1) = rsa_patternConsistency(CS.zscore_seq,CS.sessN,CS.seq_ind,'removeMean',keepmean);
-        Consist.roi(roi,1) = roi;
-        
-       end
-       
-        figure(1)
-        col=hsv(7);
-        for i = reg
-            a(i)=plot(Consist.beta(i,:),'-o','Color',col(i,:));
-            hold on;
-            drawline(Consist.beta_RSA(i),'dir','horz','color',col(i,:));
-        end
-        title('Beta values')
-        legend(a,regname(reg));
-        xlabel('All across-session combinations');
-        ylabel('Correlation / RSA consistency(line)')
-        
-        figure(2)
-        for j=reg
-            b(j)=plot(Consist.zscore(j,:),'-o','Color',col(j,:));
-            hold on;
-            drawline(Consist.zscore_RSA(j),'dir','horz','color',col(j,:));
-        end
-        title('Z scores')
-        legend(b,regname(reg));
-        xlabel('All across-session combinations');
-        ylabel('Correlation / RSA consistency(line)');
-        
-        keyboard;
-        
-    case 'ROI_beta_consist_betwSess_LOC'
-        % evaluate consistency of measures (psc, beta, z-scores) across
-        % sessions for finger mapping
-        
-        sn  = 1;
-        sessN = 1;
-        reg = 1:7;
-        keepmean=0;
-        betaChoice = 'multi'; % options: uni / multi / raw
-        vararginoptions(varargin,{'sn','sessN','reg','betaChoice','keepmean'});
-
-        
-       for  roi = reg;
-        CS=[];  % separate per digit
-        PS=[];  % across all digits
-        for sessN = 1:4; % per session
-            C=[];P=[];
+        for sessN = 1:4 % per session
+            C=[];
             T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',sessN))); % loads region data (T)
         
             switch (betaChoice)
@@ -2875,99 +2750,22 @@ switch(what)
             PS=addstruct(PS,P);
         end
         
-        O.betas(roi,:) = mean(PS.beta_mean,2)';    % one value per session
-        O.zscore(roi,:) = mean(PS.zscore_mean,2)';
-        O.roi(roi,1) = roi;
+        O.overall = mean(PS.beta_mean,2);    % one value per session
+        O.overall = [O.overall;mean(PS.zscore_mean,2)];
+        O.indx = [ones(4,1);ones(4,1)*2];   % 1-beta, 2-zscore
         
         ind = indicatorMatrix('allpairs',([1:4]));  % betwSess indicator
         for i=1:size(ind,1)
             [i1 i2] = find(ind(i,:)~=0);
-            if keepmean == 0
-                Consist.beta(roi,i)=corr(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corr(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
-            elseif keepmean == 1
-                Consist.beta(roi,i)=corrN(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corrN(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
-            end
+            Consist_beta(i,1)=corrN(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
+            Consist_zscore(i,1)=corrN(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
         end
         
-        Consist.beta_RSA(roi,1) = rsa_patternConsistency(CS.beta_digit,CS.sessN,CS.digit_ind,'removeMean',keepmean);
-        Consist.zscore_RSA(roi,1) = rsa_patternConsistency(CS.zscore_digit,CS.sessN,CS.digit_ind,'removeMean',keepmean);
-        Consist.roi(roi,1) = roi;
+        Consist_beta_RSA = rsa_patternConsistency(CS.beta_digit,CS.sessN,CS.digit_ind,'removeMean','keepmean');
+        Consist_zscore_RSA = rsa_patternConsistency(CS.zscore_digit,CS.sessN,CS.digit_ind,'removeMean','keepmean');
         
-       end
-       
-        figure(1)
-        col=hsv(7);
-        for i = reg
-            a(i)=plot(Consist.beta(i,:),'-o','Color',col(i,:));
-            hold on;
-            drawline(Consist.beta_RSA(i),'dir','horz','color',col(i,:));
-        end
-        title('Beta values')
-        legend(a,regname(reg));
-        xlabel('All across-session combinations');
-        ylabel('Correlation / RSA consistency(line)')
+        % add figures
         
-        figure(2)
-        for j=reg
-            b(j)=plot(Consist.zscore(j,:),'-o','Color',col(j,:));
-            hold on;
-            drawline(Consist.zscore_RSA(j),'dir','horz','color',col(j,:));
-        end
-        title('Z scores')
-        legend(b,regname(reg));
-        xlabel('All across-session combinations');
-        ylabel('Correlation / RSA consistency(line)')
-    case 'ROI_beta_consist_witSess_LOC'
-        % pattern consistency for specified roi
-        % Pattern consistency is a measure of the proportion of explained
-        % beta variance across runs within conditions. 
-        % 
-        % This stat is useful for determining which GLM model yields least
-        % variable beta estimates. That GLM should be the one you use for
-        % future analysis cases.
-        %
-        % enter sn, region, glm #, beta: 0=betaW, 1=betaUW, 2=raw betas
-        % (1) Set parameters
-        sessN = 1;
-        sn  = 1;
-        roi = 2; % default LH primary motor cortex
-        betaChoice = 'uw';  % raw / uw / mw 
-        keepmean = 0; % are we removing pattern means for patternconsistency?
-        vararginoptions(varargin,{'sn','glm','roi','betaChoice','keepmean','sessN'});
-
-        Rreturn=[];
-        %========%
-        for s=sessN
-            T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',s))); % loads in struct 'T'
-            for r=roi
-                Rall=[]; %prep output variable
-                for s=sn
-                    S = getrow(T,(T.SN==s & T.region==r));
-                    runs = 1:numruns_loc_sess; % 2 func runs
-                    switch(betaChoice)
-                        case 'raw'
-                            betaW  = S.betaW{1}; 
-                        case 'uw'
-                            betaW  = S.betaUW{1}; 
-                        case 'mw'
-                            betaW  = S.betaRAW{1}; 
-                    end
-                    
-                    % make vectors for pattern consistency func
-                    conditionVec = kron(ones(numel(runs),1),[1:5]');
-                    partition    = kron(runs',ones(5,1));
-                    % calculate the pattern consistency
-                    R2   = rsa_patternConsistency(betaW,partition,conditionVec,'removeMean',keepmean);
-                    Rall = [Rall,R2];
-                end
-                Rreturn = [Rreturn;Rall];
-            end
-        end
-        varargout = {Rreturn};
-        fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
-        % output arranged such that each row is an roi, each col is subj
         
     case 'ROI_dimensionality'
         % estimating the dimensionality of patterns 
@@ -2988,10 +2786,10 @@ switch(what)
             title(sprintf('Session %d',s));
             hold on;
             plot(eigTrain_sum,'-o','Color','b');
-            legend('trained','Location','northwest');
+            legend('trained');
             subplot(2,4,4+s)
             plot(eigUntrain_sum,'-o','Color','r');
-            legend('untrained','Location','northwest');
+            legend('untrained');
         end
     case 'ROI_dim_LOC'
         % estimating the dimensionality of patterns 
