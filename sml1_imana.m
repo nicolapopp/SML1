@@ -187,7 +187,7 @@ loc_AC     = {[-112 -165 -176],...
 % s04 - scan 2: two runs repeated / replaced
 %       dat files: - ADD!!!!
 
-%hello 
+%moetpa
 % ------------------------------ Analysis Cases --------------------------------
 switch(what)
     
