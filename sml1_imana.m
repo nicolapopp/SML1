@@ -123,7 +123,8 @@ DicomName{3}  = {'2017_08_15_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_22_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_23_S03.MR.DIEDRICHSEN_LONGSEQLEARN'};             
 DicomName{4}  = {'2017_08_16_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_08_23_S02.MR.DIEDRICHSEN_LONGSEQLEARN'};
+                 '2017_08_23_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_08_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN'};
 
 
 NiiRawName{1} = {'170718114530DST131221107523418932',...
@@ -138,7 +139,8 @@ NiiRawName{3}  = {'170815144204DST131221107523418932',...
                   '170822110530DST131221107523418932',...
                   '170823110924DST131221107523418932'};  
 NiiRawName{4}  = {'170816090254DST131221107523418932',...
-                  '170823091559DST131221107523418932'};
+                  '170823091559DST131221107523418932',...
+                  '170825085040DST131221107523418932'};
 
 fscanNum{1}   = {[16 18 20 22 24 26 28 30 32 34],...
                  [16 18 20 22 24 26 28 30 32 34],...
@@ -152,7 +154,8 @@ fscanNum{3}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 31 17 19 21 23 25 27 29],...  % note - block 3 was repeated at the end (problem with TR)
                  [11 13 15 17 19 21 23 25 27 29]};  
 fscanNum{4}   = {[11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 15 17 31 21 23 25 27 29]};    % note - block 5 repeated at the end (high error rate)
+                 [11 13 15 17 31 21 23 25 27 29],...  % note - block 5 repeated at the end (high error rate)
+                 [11 13 15 17 19 21 23 25 27 29]};    
 
 fieldNum{1}   = {[35,36],...
                  [35,36],...
@@ -166,7 +169,8 @@ fieldNum{3}   = {[30,31],...
                  [32,33],...
                  [30,31]};
 fieldNum{4}   = {[30,31],...
-                 [32,33]};
+                 [32,33],...
+                 [30,31]};
 
 anatNum    = {[10:14],...
               [10:14],...
@@ -175,7 +179,7 @@ anatNum    = {[10:14],...
           
 loc_AC     = {[-112 -165 -176],...
               [-106 -173 -163],...
-              [-108 -172 -162],...
+              [-107 -178 -163],...
               [-103 -162 -167]};
 
 % Other random notes %
@@ -1104,6 +1108,7 @@ switch(what)
                 end
         end;
         cd(cwd);
+        
     case '3c_GLM_FoSEx' % ------- GLM with separate regressors for first / second execution --
         % fits regressors separately for FoSEx
     case 'GLM_make_FoSEx'
@@ -2309,8 +2314,26 @@ switch(what)
         %
         % See blurbs in each SEARCH case to understand what they do.
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
-    case 'ROI_define'                                                       % STEP 5.1   :  Define ROIs
-
+    case 'MASK_combine'
+        % combine glm masks of all runs, create one mask overall
+        
+        vararginoptions(varargin,{'sn'});
+        for s = sn
+            for sess = 1:sess_sn(sn)
+                file = fullfile(glmSessDir{sess},subj_name{s},'mask.nii');
+                V = spm_vol(file);
+                mask(:,:,:,sess)=spm_read_vols(V);
+            end
+            maskNew=mask(:,:,:,1).*mask(:,:,:,2).*mask(:,:,:,3).*mask(:,:,:,4);
+            dest = fullfile(regDir, ['mask_' subj_name{sn} '.nii']);
+            V.fname=dest;
+            V.dim=size(maskNew);
+            V=rmfield(V,'descrip');
+            V.descrip = 'combined_mask';
+            spm_write_vol(V,maskNew);
+        end
+    case 'ROI_define_sess'  % only used if not complete dataset - mask per glm rather than overall mask
+        
         vararginoptions(varargin,{'sn','sessN'});
         for s=sn
             R=[];
@@ -2319,7 +2342,43 @@ switch(what)
                 caretSubjDir = fullfile(caretDir,['x' subj_name{s}]);  
                % suitSubjDir = fullfile(suitDir,'anatomicals',subj_name{s});
 
-                file = fullfile(glmSessDir{sessN},subj_name{s},'mask.nii');
+               %file = fullfile(regDir,['mask_' subj_name{s} '.nii']); % mask constructed in mask_combine
+               file = fullfile(glmSessDir{sessN},subj_name{s},'mask.nii'); % mask constructed in glm    
+                
+                 for i=1:numregions_surf
+                    R{i+(h-1)*numregions_surf}.type='surf_nodes';
+                    R{i+(h-1)*numregions_surf}.white=fullfile(caretSubjDir,hemName{h},[hem{h} '.WHITE.coord']);
+                    R{i+(h-1)*numregions_surf}.pial=fullfile(caretSubjDir,hemName{h},[hem{h} '.PIAL.coord']);
+                    R{i+(h-1)*numregions_surf}.topo=fullfile(caretSubjDir,hemName{h},[hem{h} '.CLOSED.topo']);
+                    R{i+(h-1)*numregions_surf}.flat=fullfile(caretDir,'fsaverage_sym',hemName{h},[hem{h} '.FLAT.coord']);
+                    
+                    R{i+(h-1)*numregions_surf}.linedef=[10,0,1];
+                    R{i+(h-1)*numregions_surf}.image=file;
+                    R{i+(h-1)*numregions_surf}.name=[subj_name{s} '_' regname_cortex{i} '_' hem{h}];
+                    R{i+(h-1)*numregions_surf}.location=find(C.data(:,1)==i);
+                 end            
+                          
+            end;
+                 
+            R=region_calcregions(R);
+            dircheck(regDir);
+            cd(regDir);
+            save([subj_name{s} '_regions.mat'],'R'); 
+            
+            fprintf('\nROIs have been defined for %s \n',subj_name{sn});
+        end    
+    case 'ROI_define'                                                       % STEP 5.1   :  Define ROIs
+
+        vararginoptions(varargin,{'sn'});
+        for s=sn
+            R=[];
+            for h=1:2
+                C = caret_load(fullfile(caretDir,'fsaverage_sym',hemName{h},['ROI.paint']));
+                caretSubjDir = fullfile(caretDir,['x' subj_name{s}]);  
+               % suitSubjDir = fullfile(suitDir,'anatomicals',subj_name{s});
+
+               file = fullfile(regDir,['mask_' subj_name{s} '.nii']); % mask constructed in mask_combine
+                %file = fullfile(glmSessDir{sessN},subj_name{s},'mask.nii');
                 
                  for i=1:numregions_surf
                     R{i+(h-1)*numregions_surf}.type='surf_nodes';
@@ -2594,10 +2653,13 @@ switch(what)
                 So.RDM_nocv = distance_euclidean(betaW',D.seqNumb)';
                 So.RDM      = rsa.distanceLDC(betaW,D.run,D.seqNumb);
                 % trained seq
-                [G_train, Sig_train] = pcm_estGCrossval(betaW(D.seqType==1,:),D.run(D.seqType==1),D.seqNumb(D.seqType==1));
-                So.eigTrain = sort(eig(G_train)','descend');    % sorted eigenvalues
+                H=eye(6)-ones(6,6)./6;  % centering matrix!
+                [G_train, Sig_train] = pcm_estGCrossval(betaW(D.seqType==1,:),D.run(D.seqType==1),D.seqNumb(D.seqType==1));   
+                G_trainCent = H*G_train*H;  % double centered G matrix - rows and columns
+                So.eigTrain = sort(eig(G_trainCent)','descend');    % sorted eigenvalues
                 [G_untrain, Sig_untrain] = pcm_estGCrossval(betaW(D.seqType==2,:),D.run(D.seqType==2),D.seqNumb(D.seqType==2));
-                So.eigUntrain = sort(eig(G_untrain)','descend');
+                G_untrainCent = H*G_untrain*H;  % double centered G matrix - rows and columns
+                So.eigUntrain = sort(eig(G_untrainCent)','descend');
                 % untrained seq
                 % indexing fields
                 So.SN       = s;
@@ -2672,13 +2734,13 @@ switch(what)
         sessN = 1;
         sn  = 1;
         roi = 2; % default LH primary motor cortex
-        beta = 'uw';  % raw / uw / mw -> MW performs the best!
-        removeMean = 'no'; % are we removing pattern means for patternconsistency?
-        vararginoptions(varargin,{'sn','glm','roi','beta','removeMean'});
+        betaChoice = 'uw';  % raw / uw / mw -> MW performs the best!
+        removeMean = 'yes'; % are we removing pattern means for patternconsistency?
+        vararginoptions(varargin,{'sn','glm','roi','betaChoice','removeMean'});
         
         if strcmp(removeMean,'yes')
-             keepmean = 1; % we are removing the mean
-        else keepmean = 0; % we are keeping the mean (yeilds higher consistencies but these are biased)
+             rm = 1; % we are removing the mean
+        else rm = 0; % we are keeping the mean (yeilds higher consistencies but these are biased)
         end
   
         Rreturn=[];
@@ -2690,7 +2752,7 @@ switch(what)
                 for s=sn
                     S = getrow(T,(T.SN==s & T.region==r));
                     runs = 1:numruns_task_sess; % 8 func runs
-                    switch(beta)
+                    switch(betaChoice)
                         case 'raw'
                             betaW  = S.betaW{1}; 
                         case 'uw'
@@ -2703,14 +2765,14 @@ switch(what)
                     conditionVec = kron(ones(numel(runs),1),[1:12]');
                     partition    = kron(runs',ones(12,1));
                     % calculate the pattern consistency
-                    R2   = rsa_patternConsistency(betaW,partition,conditionVec,'removeMean',keepmean);
+                    R2   = rsa_patternConsistency(betaW,partition,conditionVec,'removeMean',rm);
                     Rall = [Rall,R2];
                 end
                 Rreturn = [Rreturn;Rall];
             end
         end
         varargout = {Rreturn};
-        fprintf('The consistency for %s betas in region %s is',beta,regname{roi});
+        fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
         % output arranged such that each row is an roi, each col is subj
         
         %_______________    
@@ -2719,13 +2781,16 @@ switch(what)
         % sessions for finger mapping
         
         sn  = 1;
-        sessN = 1;
         reg = 1:7;
-        keepmean=0;
+        removeMean = 'yes'; % are we removing pattern means for patternconsistency?
         betaChoice = 'multi'; % options: uni / multi / raw
         seq = 'untrained';
-        vararginoptions(varargin,{'sn','sessN','reg','betaChoice','keepmean','seq'});
-
+        vararginoptions(varargin,{'sn','reg','betaChoice','removeMean','seq'});
+        
+        if strcmp(removeMean,'yes')
+             rm = 1; % we are removing the mean
+        else rm = 0; % we are keeping the mean (yeilds higher consistencies but these are biased)
+        end
         
        for  roi = reg;
         CS=[];  % separate per digit
@@ -2756,9 +2821,8 @@ switch(what)
             %C.beta=beta{roi};   
             for d = 1:6 %sequences
                 C.beta_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1);  % beta values for each digit (avrg across two blocks)
+                C.psc_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1)./mean(beta{roi}(end-7:end,:),1).*100;
                 C.zscore_seq(d,:) = (C.beta_seq(d,:)-mean(C.beta_seq(d,:)))./std(C.beta_seq(d,:));
-                % C.psc_digit(d,:)=mean(median(max(beta{roi}(d,:)))/median(max(beta{roi}(6,:))),...
-               %     median(max(beta{roi}(d+6,:)))/median(max(beta{roi}(12,:))));  % mean of psc of two blocks - median response / intercept
             end
             
             %C.zscore_seq = bsxfun(@rdivide,C.beta_seq,sqrt(T.resMS{roi}));
@@ -2766,8 +2830,7 @@ switch(what)
             C.seq_ind=[1:6]';
             C.sessN=ones(6,1)*sessN;
             C.roi=ones(6,1)*roi;
-            
-            
+
             P.beta_mean=mean(C.beta_seq,1);   % mean pattern acros digit in each session
             P.zscore_mean=mean(C.zscore_seq,1);
             %P.zscore_mean=bsxfun(@rdivide,P.beta_mean,sqrt(T.resMS{roi}));
@@ -2778,24 +2841,31 @@ switch(what)
             PS=addstruct(PS,P);
         end
         
-        O.betas(roi,:) = mean(PS.beta_mean,2)';    % one value per session
-        O.zscore(roi,:) = mean(PS.zscore_mean,2)';
-        O.roi(roi,1) = roi;
-        
         ind = indicatorMatrix('allpairs',([1:4]));  % betwSess indicator
-        for i=1:size(ind,1)
-            [i1 i2] = find(ind(i,:)~=0);
-            if keepmean == 0
-                Consist.beta(roi,i)=corr(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corr(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
-            elseif keepmean == 1
-                Consist.beta(roi,i)=corrN(PS.beta_mean(i1(2),:)',PS.beta_mean(i2(2),:)');
-                Consist.zscore(roi,i)=corrN(PS.zscore_mean(i1(2),:)',PS.zscore_mean(i2(2),:)');
+        for n=1:numel(unique(CS.seq_ind))
+            T = getrow(CS,CS.seq_ind==n);
+            for i=1:size(ind,1)
+                [i1 i2] = find(ind(i,:)~=0);
+                if rm == 1
+                    AcrSess_b(i)=corr(T.beta_seq(i1(2),:)',T.beta_seq(i2(2),:)');
+                    AcrSess_z(i)=corr(T.zscore_seq(i1(2),:)',T.zscore_seq(i2(2),:)');
+                    AcrSess_p(i)=corr(T.psc_seq(i1(2),:)',T.psc_seq(i2(2),:)');
+                elseif rm == 0
+                    AcrSess_b(i)=corrN(T.beta_seq(i1(2),:)',T.beta_seq(i2(2),:)');
+                    AcrSess_z(i)=corrN(T.zscore_seq(i1(2),:)',T.zscore_seq(i2(2),:)');
+                    AcrSess_z(i)=corrN(T.psc_seq(i1(2),:)',T.psc_seq(i2(2),:)');
+                end
             end
+            AcrSess_beta(n)=mean(AcrSess_b);
+            AcrSess_zscore(n)=mean(AcrSess_z);
+            AcrSess_psc(n)=mean(AcrSess_p);
         end
-        
-        Consist.beta_RSA(roi,1) = rsa_patternConsistency(CS.beta_seq,CS.sessN,CS.seq_ind,'removeMean',keepmean);
-        Consist.zscore_RSA(roi,1) = rsa_patternConsistency(CS.zscore_seq,CS.sessN,CS.seq_ind,'removeMean',keepmean);
+        Consist.beta_corr(roi,:) = AcrSess_beta;
+        Consist.zscore_corr(roi,:) = AcrSess_zscore;
+        Consist.psc_corr(roi,:) = AcrSess_psc;
+        Consist.beta_RSA(roi,1) = rsa_patternConsistency(CS.beta_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
+        Consist.zscore_RSA(roi,1) = rsa_patternConsistency(CS.zscore_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
+        Consist.psc_RSA(roi,1) = rsa_patternConsistency(CS.psc_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
         Consist.roi(roi,1) = roi;
         
        end
@@ -2803,7 +2873,7 @@ switch(what)
         figure(1)
         col=hsv(7);
         for i = reg
-            a(i)=plot(Consist.beta(i,:),'-o','Color',col(i,:));
+            a(i)=plot(Consist.beta_corr(i,:),'-o','Color',col(i,:));
             hold on;
             drawline(Consist.beta_RSA(i),'dir','horz','color',col(i,:));
         end
@@ -2814,11 +2884,11 @@ switch(what)
         
         figure(2)
         for j=reg
-            b(j)=plot(Consist.zscore(j,:),'-o','Color',col(j,:));
+            b(j)=plot(Consist.psc_corr(j,:),'-o','Color',col(j,:));
             hold on;
-            drawline(Consist.zscore_RSA(j),'dir','horz','color',col(j,:));
+            drawline(Consist.psc_RSA(j),'dir','horz','color',col(j,:));
         end
-        title('Z scores')
+        title('Percentage')
         legend(b,regname(reg));
         xlabel('All across-session combinations');
         ylabel('Correlation / RSA consistency(line)');
