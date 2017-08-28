@@ -1,6 +1,5 @@
 function varargout=sml1_imana(what,varargin)
 
-% old version
 % ------------------------- Directories -----------------------------------
 baseDir         ='/Users/nicola/Documents/Data/SuperMotorLearning';
 behavDir        =[baseDir '/behavioral_data'];            

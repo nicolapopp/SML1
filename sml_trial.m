@@ -25,6 +25,8 @@ vF			= velocity_discr(F,2);
 
 indx = [1:5; 6:10];  % row: left/right hand; column: 1-5 fing
 
+% note: for TQ:
+% indx = [6 7 8 9 10; 1 2 3 4 5];  % row: left/right hand; column: 1-5 fing
 
 % find out the number of finger presses by counting "response" fields
 A = fieldnames(D);
