@@ -1846,7 +1846,52 @@ switch(what)
                 
             end;
         end;
-        
+    case 'CONT_surface'
+     % create surface maps of contrast maps
+     % trained and untrained sequences
+     
+        smooth = 0;   
+        vararginoptions(varargin,{'sn','sessN','smooth'});
+
+        hemisphere=1:length(hem);
+        fileList = [];
+        column_name = [];
+        name={'Seq1','Seq2','Seq3','Seq4','Seq5','Seq6','Seq7','Seq8','Seq9','Seq10','Seq11','Seq12','TrainSeq','UntrainSeq'};
+        for n = 1:length(name)
+            fileList{n}=fullfile(['psc_sess' num2str(sessN) '_' name{n} '.nii']);
+            column_name{n} = fullfile(sprintf('Sess%d_%s.nii',sessN,name{n}));
+        end
+        for s=sn
+            for h=hemisphere
+                caretSDir = fullfile(caretDir,['x',subj_name{s}],hemName{h});
+                specname=fullfile(caretSDir,['x',subj_name{s} '.' hem{h}   '.spec']);
+                white=fullfile(caretSDir,[hem{h} '.WHITE.coord']);
+                pial=fullfile(caretSDir,[hem{h} '.PIAL.coord']);
+                
+                C1=caret_load(white);
+                C2=caret_load(pial);
+                
+                for f=1:length(fileList)
+                    images{f}=fullfile(glmSessDir{sessN},subj_name{s},fileList{f});
+                end;
+                metric_out = fullfile(caretSDir,sprintf('%s_Contrasts_sess%d.metric',subj_name{s},sessN));
+                M=caret_vol2surf_own(C1.data,C2.data,images,'ignore_zeros',1);
+                M.column_name = column_name;
+                caret_save(metric_out,M);
+                fprintf('Subj %d, Hem %d\n',s,h);
+                
+                if smooth == 1;
+                    % Smooth output .metric file (optional)
+                    % Load .topo file
+                    closed = fullfile(caretSDir,[hem{h} '.CLOSED.topo']);
+                    Out = caret_smooth(metric_out, 'coord', white, 'topo', closed);%,...
+                    %'algorithm','FWHM','fwhm',12);
+                    char(Out);  % if smoothed adds an 's'
+                else
+                end;
+                
+            end;
+        end;  
     case 'SEARCH_define'                                                    % STEP 4.1a   :  Defines searchlights for 120 voxels in grey matter surface
         vararginoptions(varargin,{'sn','sessN'});
         
@@ -2575,6 +2620,41 @@ switch(what)
         % save T
         save(fullfile(regDir,sprintf('reg_betas_sess%d.mat',sessN)),'-struct','T'); 
         fprintf('\n');    
+    case 'ROI_getBetas_FoSEx'
+        sessN = 1;
+        sn  = 1;    
+        roi = [1:14];
+        vararginoptions(varargin,{'sn','sessN','roi'});
+        
+        T=[];
+            
+        % harvest
+        for s=sn % for each subj
+            fprintf('\nSubject: %d\n',s) % output to user
+            
+            % load files
+            load(fullfile(glmFoSExDir{sessN}, subj_name{s},'SPM.mat'));  % load subject's SPM data structure (SPM struct)
+            load(fullfile(regDir,[subj_name{s} '_regions.mat']));        % load subject's region parcellation (R)
+            V = SPM.xY.VY; 
+            
+            for r = roi % for each region
+                % get raw data for voxels in region
+                Y = region_getdata(V,R{r});  % Data Y is N x P 
+                % estimate region betas
+                [betaW,resMS,SW_raw,beta] = rsa.spm.noiseNormalizeBeta(Y,SPM,'normmode','overall');
+                S.betaW                   = {betaW};                             % multivariate pw
+                S.betaUW                  = {bsxfun(@rdivide,beta,sqrt(resMS))}; % univariate pw 
+                S.betaRAW                 = {beta};
+                S.resMS                   = {resMS};
+                S.SN                      = s;
+                S.region                  = r;
+                T = addstruct(T,S);
+                fprintf('%d.',r)
+            end
+        end
+        % save T
+        save(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',sessN)),'-struct','T'); 
+        fprintf('\n');    
     case 'ROI_getBetas_LOC'
         % for localizer  
         sessN = 1;
@@ -2678,7 +2758,8 @@ switch(what)
         sessN = 1;
         sn  = 1;
         roi = [1:14];
-        vararginoptions(varargin,{'sn','sessN','roi'});
+        betaChoice = 'multi';
+        vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
         
         T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',sessN))); % loads region data (T)
         
@@ -2696,12 +2777,21 @@ switch(what)
                 S = getrow(T,(T.SN==s & T.region==r)); % subject's region data
                 fprintf('%d.',r)
                 
-                betaW  = S.betaUW{1};
+                switch (betaChoice)
+                    case 'uni'
+                        betaW  = S.betaUW{1};
+                    case 'multi'
+                        betaW  = S.betaW{1};
+                    case 'raw'
+                        betaW  = S.betaRAW{1};
+                end
                 
                 % % TseqNumb structure stats (finger mapping - 5 conditions)
                 % crossval second moment matrix
                 [G,Sig]     = pcm_estGCrossval(betaW(1:(5*num_run),:),D.run,D.seqNumb);
-                So.eig      = sort(eig(G-mean(mean(G)))','descend');
+                H=eye(5)-ones(5,5)./5;  % centering matrix!
+                G_cent      = H*G*H;  % double centered G matrix - rows and columns
+                So.eig      = sort(eig(G_cent)','descend');
                 So.IPM      = rsa_vectorizeIPM(G);
                 So.Sig      = rsa_vectorizeIPM(Sig);
                 % squared distances
@@ -2720,6 +2810,74 @@ switch(what)
         % % save
         save(fullfile(regDir,sprintf('sess%d_LOC_reg_statsAllSeq.mat',sessN)),'-struct','To');
         fprintf('\nDone.\n')  
+    case 'ROI_stats_FoSEx'
+        sessN = 1;
+        sn  = [1:2];
+        roi = [1:14];
+        betaChoice = 'multi'; % uni, multi or raw
+        vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
+        
+        T = load(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',sessN))); % loads region data (T)
+        
+        % output structures
+        Ts = [];
+        To = [];
+        
+        % do stats
+        for s = sn % for each subject
+            D = load(fullfile(glmFoSExDir{sessN}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
+            fprintf('\nSubject: %d\n',s)
+            num_run = numruns_task_sess;
+            
+            for r = roi % for each region
+                S = getrow(T,(T.SN==s & T.region==r)); % subject's region data
+                fprintf('%d.',r)
+                
+                for exe = 1:2   % FoSEx
+                    switch (betaChoice)
+                        case 'uni'
+                            betaW  = S.betaUW{1}(D.FoSEx==exe,:);
+                        case 'multi'
+                            betaW  = S.betaW{1}(D.FoSEx==exe,:);
+                        case 'raw'
+                            betaW  = S.betaRAW{1}(D.FoSEx==exe,:);
+                    end
+                    
+                    D_exe = getrow(D,D.FoSEx==exe);
+                    
+                    % % To structure stats (all seqNumb - 12 conditions)
+                    % crossval second moment matrix
+                    [G,Sig]     = pcm_estGCrossval(betaW(1:(12*num_run),:),D_exe.run,D_exe.seqNumb);
+                    So.IPM      = rsa_vectorizeIPM(G);
+                    So.Sig      = rsa_vectorizeIPM(Sig);
+                    % squared distances
+                    So.RDM_nocv = distance_euclidean(betaW',D_exe.seqNumb)';
+                    So.RDM      = rsa.distanceLDC(betaW,D_exe.run,D_exe.seqNumb);
+                    % trained seq
+                    H=eye(6)-ones(6,6)./6;  % centering matrix!
+                    [G_train, Sig_train] = pcm_estGCrossval(betaW(D_exe.seqType==1,:),D.run(D_exe.seqType==1),D.seqNumb(D_exe.seqType==1));
+                    G_trainCent = H*G_train*H;  % double centered G matrix - rows and columns
+                    So.eigTrain = sort(eig(G_trainCent)','descend');    % sorted eigenvalues
+                    [G_untrain, Sig_untrain] = pcm_estGCrossval(betaW(D_exe.seqType==2,:),D.run(D_exe.seqType==2),D.seqNumb(D_exe.seqType==2));
+                    G_untrainCent = H*G_untrain*H;  % double centered G matrix - rows and columns
+                    So.eigUntrain = sort(eig(G_untrainCent)','descend');
+                    % untrained seq
+                    % indexing fields
+                    So.SN       = s;
+                    So.region   = r;
+                    So.regSide  = regSide(r);
+                    So.regType  = regType(r);
+                    So.FoSEx    = exe;
+                    To          = addstruct(To,So);
+                    
+                end; % FoSEx
+            end; % each region
+        end; % each subject
+
+        % % save
+        save(fullfile(regDir,sprintf('sess%d_FoSEx_reg_statsAllSeq.mat',sessN)),'-struct','To');
+        fprintf('\nDone.\n')  
+        
     case 'ROI_beta_consist_witSess'                                           % OPTIONAL   :  Calculates pattern consistencies for each subject in roi across glms.
         % pattern consistency for specified roi
         % Pattern consistency is a measure of the proportion of explained
@@ -2820,7 +2978,7 @@ switch(what)
 
             %C.beta=beta{roi};   
             for d = 1:6 %sequences
-                C.beta_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1);  % beta values for each digit (avrg across two blocks)
+                C.beta_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1);  % beta values for each digit (avrg across blocks)
                 C.psc_seq(d,:)=mean(beta{roi}(conditionVec==idx(d),:),1)./mean(beta{roi}(end-7:end,:),1).*100;
                 C.zscore_seq(d,:) = (C.beta_seq(d,:)-mean(C.beta_seq(d,:)))./std(C.beta_seq(d,:));
             end
@@ -2893,8 +3051,7 @@ switch(what)
         xlabel('All across-session combinations');
         ylabel('Correlation / RSA consistency(line)');
         
-        keyboard;
-        
+        keyboard;  
     case 'ROI_beta_consist_betwSess_LOC'
         % evaluate consistency of measures (psc, beta, z-scores) across
         % sessions for finger mapping
@@ -3077,9 +3234,229 @@ switch(what)
              
             figure(1)
             subplot(2,2,s)
+            title(sprintf('Session %d',s));
             plot(eigfing_sum,'-o','Color','b');
             legend('finger');
         end
+    case 'ROI_act_dist'
+        
+        sn = [1:2];
+        roi = [1:5];
+        sessN = 1:4;
+        seq = 'trained';
+        betaChoice = 'multi';
+        fig = 1;
+        vararginoptions(varargin,{'sn','roi','seq','sessN','betaChoice','fig'});
+
+        Stats = [];
+        
+        for ss = sessN % do per session number
+            D = load(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',ss))); % loads region data (D)
+            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',ss))); % loads region data (T)
+            
+            switch (betaChoice)
+                case 'uni'
+                    beta = T.betaUW;
+                case 'multi'
+                    beta = T.betaW;
+                case 'raw'
+                    beta = T.betaRAW;
+            end
+            
+            runs=1:numruns_task_sess;
+            conditionVec = kron(ones(numel(runs),1),[1:12]');
+            
+            
+            indx_train = 1:6;
+            indx_untrain = 7:12;
+
+            
+            for s=1:numel(sn)
+                for r=roi
+                    
+                    clear C;
+                    for d = 1:6 %sequences
+                        C.beta_seq_train(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==indx_train(d),:),1);  % beta values for each digit (avrg across blocks)
+                        C.beta_seq_untrain(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==indx_untrain(d),:),1);
+                        %C.psc_seq(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==seq_indx(d),:),1)./mean(beta{T.SN==s & T.region==r}(end-7:end,:),1).*100;
+                    end
+                                   
+                    AllDist = ssqrt(rsa_squareRDM(D.RDM(D.region==r & D.SN==sn(s),:)));
+                    SeqTrain = triu(AllDist(indx_train,indx_train));
+                    SeqUntrain = triu(AllDist(indx_untrain,indx_untrain));
+                    SeqCross = triu(AllDist(indx_train,indx_untrain));
+                    SeqTrainAll = SeqTrain(SeqTrain~=0);
+                    SeqUntrainAll = SeqUntrain(SeqUntrain~=0);
+                    SeqCrossAll = SeqCross(SeqCross~=0);
+                    
+                    switch (fig)
+                        case 1
+                            figure(r)
+                            subplot(1,max(sessN),ss)
+                            imagesc(AllDist);
+                            drawline(6.5,'dir','vert');
+                            drawline(6.5,'dir','horz');
+                            colorbar; caxis([-0.02 0.04]);
+                            if ss == 4; set(gcf,'PaperPosition',[2 2 20 4],'Color',[1 1 1]); wysiwyg; end;
+                            title(sprintf('Subject %d session %d region %s',s,ss,regname{r}));
+                    end
+                    
+                    S.sn=s;
+                    S.roi=r;
+                    S.dist_train=mean(SeqTrainAll); 
+                    S.dist_untrain=mean(SeqUntrainAll);
+                    S.dist_cross=mean(SeqCrossAll);
+                    S.beta_train=mean(mean(C.beta_seq_train));
+                    S.beta_untrain=mean(mean(C.beta_seq_untrain));
+                    S.sessN=ss;
+                    Stats=addstruct(Stats,S);
+                end
+            end
+        end
+        figure;
+        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        title('Distance trained');
+        
+        figure;
+        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        title('Distance untrained');
+        
+        figure;
+        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        title('Distance cross-seq');
+        
+        
+        figure;
+        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        title('Betas trained');
+        
+        figure;
+        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        title('Betas untrained');
+        
+       % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]
+        keyboard;      
+    case 'ROI_act_dist_FoSEx'
+        
+        sn = 1;
+        roi = 3;
+        sessN = 1:4;
+        seq = 'trained';
+        betaChoice = 'multi';
+        fig = 1;
+        vararginoptions(varargin,{'sn','roi','seq','sessN','betaChoice','fig'});
+
+        Stats = [];
+        
+        for ss = sessN % do per session number
+            D = load(fullfile(regDir,sprintf('sess%d_FoSEx_reg_statsAllSeq.mat',ss))); % loads region data (D)
+            T = load(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',ss))); % loads region data (T)
+            
+            runs=1:numruns_task_sess;
+            conditionVec = kron(ones(numel(runs),1),[1:12]');
+            
+            
+            indx_train = 1:6;
+            indx_untrain = 7:12;
+
+            
+            for s=1:numel(sn)
+                SI = load(fullfile(glmFoSExDir{ss}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
+                for r=roi
+                    for exe=1:2;    % FoSEx
+                       D_exe = getrow(D,D.FoSEx==exe); 
+                        switch (betaChoice)
+                            case 'uni'
+                                beta = T.betaUW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
+                            case 'multi'
+                                beta = T.betaW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
+                            case 'raw'
+                                beta = T.betaRAW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
+                        end
+                        
+                        clear C;
+                        for d = 1:6 %sequences
+                            C.beta_seq_train(d,:)=mean(beta(conditionVec==indx_train(d),:),1);  % beta values for each digit (avrg across blocks)
+                            C.beta_seq_untrain(d,:)=mean(beta(conditionVec==indx_untrain(d),:),1);
+                        end
+                        
+                        AllDist = ssqrt(rsa_squareRDM(D_exe.RDM(D_exe.region==r & D_exe.SN==sn(s),:)));
+                        SeqTrain = triu(AllDist(indx_train,indx_train));
+                        SeqUntrain = triu(AllDist(indx_untrain,indx_untrain));
+                        SeqCross = triu(AllDist(indx_train,indx_untrain));
+                        SeqTrainAll = SeqTrain(SeqTrain~=0);
+                        SeqUntrainAll = SeqUntrain(SeqUntrain~=0);
+                        SeqCrossAll = SeqCross(SeqCross~=0);
+                        
+                        switch (fig)
+                            case 1
+                                figure(r)
+                                subplot(2,max(sessN),(exe-1)*max(sessN)+ss)
+                                imagesc(AllDist);
+                                drawline(6.5,'dir','vert');
+                                drawline(6.5,'dir','horz');
+                                colorbar; caxis([-0.02 0.04]);
+                                if ss == 4; set(gcf,'PaperPosition',[2 2 20 8],'Color',[1 1 1]); wysiwyg; end;
+                                title(sprintf('Subject %d session %d region %s exe %d',s,ss,regname{r},exe));
+                        end
+                        
+                        S.sn=s;
+                        S.roi=r;
+                        S.dist_train=mean(SeqTrainAll);
+                        S.dist_untrain=mean(SeqUntrainAll);
+                        S.dist_cross=mean(SeqCrossAll);
+                        S.beta_train=mean(mean(C.beta_seq_train));
+                        S.beta_untrain=mean(mean(C.beta_seq_untrain));
+                        S.sessN=ss;
+                        S.FoSEx=exe;
+                        Stats=addstruct(Stats,S);
+                    end; % FoSEx
+                end; % roi
+            end; % sn
+        end
+        figure
+        subplot(3,1,1)
+        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained dist');
+        subplot(3,1,2)
+        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained dist');
+        subplot(3,1,3)
+        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('cross dist');
+        
+        figure
+        subplot(2,1,1)
+        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained betas');
+        subplot(2,1,2)
+        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained betas');
+
+       % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]
+       
+       col_sess = {'r','b','g','k'};
+       mark_seq = {'o','*'};
+       figure
+       title(sprintf('Beta values in %s', regname{r})); xlabel('2nd execution'); ylabel('1st execution');
+       gc1 = gca; hold on;
+       
+       figure
+       title(sprintf('Distance in %s',regname{r})); xlabel('2nd execution'); ylabel('1st execution');
+       gc2 = gca; hold on;
+        for ss=1:length(sessN)
+            for seq=1:2   % trained / untrained
+                if seq == 1
+                    dist = Stats.dist_train;
+                    beta = Stats.beta_train;
+                elseif seq == 2
+                    dist = Stats.dist_untrain;
+                    beta = Stats.beta_untrain;
+                end
+                
+                plot(gc1,beta(Stats.FoSEx==2 & Stats.sessN==ss),beta(Stats.FoSEx==1 & Stats.sessN==ss),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
+                plot(gc2,dist(Stats.FoSEx==2 & Stats.sessN==ss),dist(Stats.FoSEx==1 & Stats.sessN==ss),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
+            end
+        end;    % for each roi
+
+        legend(gc1,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
+        legend(gc2,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
+        keyboard;  
         
     case 'PLOT_FingDist'
         sessN=1;    % per session
@@ -3263,60 +3640,6 @@ switch(what)
             end
         end 
         
-        keyboard;
-    case 'Class_Seq'
-        
-        glm = 2;
-        sn = 1:5;
-        sequence = 'finger';
-        roi = 2;
-        vararginoptions(varargin,{'glm','sn','sequence','roi'});
-        
-        switch(sequence)
-            case 'trained'
-                seq = 1;
-            case 'untrained'
-                seq = 2;
-            case 'otherhand'
-                seq = 3;
-            case 'finger'
-                seq = 5;
-        end
-        
-        T = load(fullfile(regDir,sprintf('glm%d_reg_betas.mat',glm))); % loads region data (T)
-        
-        for reg = roi
-            for s = sn
-                D = load(fullfile(glmDir{glm}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
-                
-                betas = T.betaUW{T.SN==s & T.region==reg};
-                
-                % do classification
-                for r=1:numruns(s)   % all runs/shuffle combinations of train+test
-                    
-                    % calculate mean pattern out of 7 training sets - cent
-                    test = betas(D.seqType==seq & D.run==r,:);
-                    train = betas(D.seqType==seq & D.run~=r,:);   % 5 centroids
-                    
-                    cond_num = numel(unique(D.seqNumb(D.seqType==seq))); % how many different conditions
-                    
-                    for t = 1:cond_num         % test betas
-                        for c = 1:cond_num     % defined centroids
-                            train_mean = mean(train(c:cond_num:size(train,1),:));
-                            dist(t,c,r) = (test(t,:)-train_mean)*(test(t,:)-train_mean)';
-                        end
-                        
-                        chosFing(r,t) = find(dist(t,:,r) == min(dist(t,:,r)));  % choose finger - classify
-                    end
-                end
-                
-                acc=0;
-                for class = 1:cond_num
-                    acc = acc + sum(chosFing(:,class)==class);
-                end 
-                acc_group(reg,s) = acc/length(chosFing(:));
-            end
-        end
         keyboard;
     case 'RDM_consistency'                                                  % DEPRECIATED
         roi = 1; 
