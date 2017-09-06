@@ -1,4 +1,4 @@
-function varargout=sml1_imana(what,varargin)
+function varargout=sml1_imana_sess(what,varargin)
 
 % ------------------------- Directories -----------------------------------
 baseDir         ='/Users/eberlot/Documents/Data/SuperMotorLearning';
@@ -412,9 +412,9 @@ switch(what)
                     fprintf('Rename this file to ''%s_anatomical_raw.nii'' in the anatomical folder.\n',subj_name{s});
                 case 'fieldmap'
                     fprintf('Subject %s fieldmaps imported.\n',subj_name{s});
-                    fieldmapfold = fullfile(fieldmapDir,subj_name{s},[subj_name{s},sprintf('_%d',sessN)]);
+                    fieldmapfold = fullfile(fieldmapDir,subj_name{s},sprintf('sess%d',sessN));
                     dircheck(fieldmapfold);
-                    fprintf('The subfolder ''%s_%d'' in the subject fieldmap folder ''%s'' was created for you.\n',subj_name{s},sessN,subj_name{s});
+                    fprintf('The subfolder ''sess%d'' in the subject fieldmap folder ''%s'' was created for you.\n',sessN,subj_name{s});
                     fprintf('Please locate the magnitude and phase files (different series).\n');
                     fprintf('Rename the files into ''%s_magnitude.nii'' and ''%s_phase.nii''.\n',subj_name{s},subj_name{s});
             end
@@ -435,36 +435,45 @@ switch(what)
     case 'PREP_make_4dNifti'                                                % STEP 1.4       :  Converts dicoms to 4D niftis out of your raw data files
         vararginoptions(varargin,{'sn','sessN'});
         for s = sn
-            % For each functional run
-            for i = 1:length(fscanNum{sessN}{s})                                      
-                outfilename = fullfile(imagingDirRaw,subj_name{s},sprintf('%s_run_%2.2d.nii',subj_name{s},run_num{sessN}(i)));
-                % Create a 4d nifti of all functional imgs in this run.
-                % Don't include the first few dummy scans in this 4d nifti.
-               P={};
-                for j = 1:(numTRs(i)-numDummys)                                        
-                    P{j}=fullfile(dicomDir,[subj_name{s},sprintf('_%d',sessN)],sprintf('series%2.2d',fscanNum{sessN}{s}(i)),...
-                        sprintf('f%s-%4.4d-%5.5d-%6.6d-01.nii',NiiRawName{sessN}{s},fscanNum{sessN}{s}(i),j+numDummys,j+numDummys));
-                end;
-                dircheck(fullfile(imagingDirRaw,subj_name{s}))
-                spm_file_merge(char(P),outfilename);
-                fprintf('Run %d in session %d done -> overall run %d\n',i,sessN,run_num{sessN}(i));
-            end
-        end
+            for ss = 1:sessN
+                % For each functional run
+                for i = 1:length(fscanNum{sessN}{s})
+                    outfilename = fullfile(imagingDirRaw,subj_name{s},sprintf('sess%d',ss),sprintf('%s_run_%2.2d.nii',subj_name{s},run_num{ss}(i)));
+                    % Create a 4d nifti of all functional imgs in this run.
+                    % Don't include the first few dummy scans in this 4d nifti.
+                    P={};
+                    for j = 1:(numTRs(i)-numDummys)
+                        P{j}=fullfile(dicomDir,[subj_name{s},sprintf('_%d',ss)],sprintf('series%2.2d',fscanNum{ss}{s}(i)),...
+                            sprintf('f%s-%4.4d-%5.5d-%6.6d-01.nii',NiiRawName{ss}{s},fscanNum{ss}{s}(i),j+numDummys,j+numDummys));
+                    end;
+                    dircheck(fullfile(imagingDirRaw,subj_name{s},sprintf('sess%d',ss)))
+                    spm_file_merge(char(P),outfilename);
+                    fprintf('Run %d in session %d done -> overall run %d\n',i,ss,run_num{ss}(i));
+                end; % run
+            end; % session - ss
+        end; % sn
     case 'PREP_makefieldmap'                                                % STEP 1.5       :  Create field map
         prefix = '';
         vararginoptions(varargin,{'sn','sessN'});
-        subfolderFieldmap = sprintf('%s_%d',subj_name{sn},sessN);
-
-            %runs    = {'_01','_02','_03','_04','_05','_06','_07','_08','_09','_10'};
-      
-        spmj_makefieldmap(baseDir, subj_name{sn}, runs{sessN},'prefix',prefix,'subfolderFieldmap',subfolderFieldmap);
+        for ss=1:sessN
+            subfolderRawdata    = sprintf('sess%d',ss);
+            subfolderFieldmap   = sprintf('sess%d',ss);
+            
+            spmj_makefieldmap(baseDir, subj_name{sn}, runs{ss},'prefix',prefix,'subfolderRawdata',subfolderRawdata,'subfolderFieldmap',subfolderFieldmap);
+        end
     case 'PREP_make_realign_unwarp'                                         % STEP 1.6       :  Realign + unwarp functional runs
         prefix  ='';
         vararginoptions(varargin,{'sn','sessN'});
-        subfolderFieldmap = {sprintf('%s_%d',subj_name{sn},sessN)};
-        %runs   = {'_01','_02','_03','_04','_05','_06','_07','_08','_09','_10'};
+                
+        subfolderRawdata    = {'sess1','sess2','sess3','sess4'};
+        subfolderFieldmap   = {'sess1','sess2','sess3','sess4'};
+        subj_runs           = runs;
+        
+        subfolderRawdata    = subfolderRawdata(1:sessN);
+        subfolderFieldmap   = subfolderFieldmap(1:sessN);
+        subj_runs           = subj_runs(1:sessN);
 
-        spmj_realign_unwarp_sess(baseDir, subj_name{sn}, {runs{sessN}}, numTRs,'prefix',prefix,'subfolderFieldmap',subfolderFieldmap);
+        spmj_realign_unwarp_sess(baseDir, subj_name{sn}, subj_runs, numTRs, 'prefix',prefix, 'subfolderRawdata',subfolderRawdata,'subfolderFieldmap',subfolderFieldmap);      
     case 'PREP_plot_movementparameters'                                     % OPTIONAL       :  Investigate movement parameters
         vararginoptions(varargin,{'sn'});
         X=[];
@@ -494,23 +503,28 @@ switch(what)
         vararginoptions(varargin,{'sn','sessN'});
 
         prefix='';
-        dircheck(fullfile(baseDir, 'imaging_data',subj_name{sn}))
-        for r=1:numruns_sess;
-
-            source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{sessN}{r},'.nii']);
-            dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{sessN}{r},'.nii']);
-
-            copyfile(source,dest);
-            source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{sessN}{r},'.txt']);
-            dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{sessN}{r},'.txt']);
-
-            copyfile(source,dest);
-        end;
-        source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['meanu' prefix subj_name{sn},'_run',runs{1}{1},'.nii']); %first run of first session used for mean
-        dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['meanepi_' subj_name{sn} '.nii']);
-
-        copyfile(source,dest);
-
+        dircheck(fullfile(baseDir, 'imaging_data',subj_name{sn}));
+        for ss=1:sessN;
+            disp(['Sess' num2str(ss)]);
+            for r=1:numruns_sess;
+                
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['u' prefix subj_name{sn},'_run',runs{ss}{r},'.nii']);
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{ss}{r},'.nii']);
+                
+                copyfile(source,dest);
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['rp_' subj_name{sn},'_run',runs{ss}{r},'.txt']);
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{ss}{r},'.txt']);
+                
+                copyfile(source,dest);
+            end;
+            
+            if ss == 1
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['meanu' prefix subj_name{sn},'_run',runs{1}{1},'.nii']); %first run of first session used for mean
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['meanepi_' subj_name{sn} '.nii']);
+                
+                copyfile(source,dest);
+            end
+        end   
 
     %__________________________________________________________________
     case 'PREP_meanimage_bias_correction'                                   % STEP 1.8       :  Bias correct mean image prior to coregistration
@@ -682,8 +696,7 @@ switch(what)
         end;
 
         % Run spmj_makesamealign_nifti to bring all functional runs into
-        % same space as realigned mean epis
-        spmj_makesamealign_nifti(char(P),char(Q));
+        % same space as realigned mean epis  
     case 'PREP_check_samealign'                                             % OPTIONAL      :  Check if all functional scans are align to the anatomical
         prefix='u';
         vararginoptions(varargin,{'sn'});
@@ -1688,22 +1701,6 @@ switch(what)
                 caret_save(metric_out,M);
                 fprintf('Subj %d, Hem %d\n',s,h);
                 
-                % calc average and copy into new metric M
-                meanData 	= nanmean(Metric.data,2);
-                M           = Metric;
-                M.data      = meanData;
-                M.num_cols  = 1;
-                M.column_name = {sprintf('Mean distance (%s)',subject)};
-                M.column_color_mapping = M.column_color_mapping(1,:);
-                
-                %--- Save metric data
-                % setting directories for output image
-                metric_out   = fullfile(caretDir,[atlasA{atlas},subj_name{s}], hemName{h},...
-                    [subject, '_',fname_out,'.metric']);
-                
-                caret_save(metric_out  ,M );
-                
-                
                 if smooth == 1;
                     % Smooth output .metric file (optional)
                     % Load .topo file
@@ -1862,7 +1859,52 @@ switch(what)
                 
             end;
         end;
-        
+    case 'CONT_surface'
+     % create surface maps of contrast maps
+     % trained and untrained sequences
+     
+        smooth = 0;   
+        vararginoptions(varargin,{'sn','sessN','smooth'});
+
+        hemisphere=1:length(hem);
+        fileList = [];
+        column_name = [];
+        name={'Seq1','Seq2','Seq3','Seq4','Seq5','Seq6','Seq7','Seq8','Seq9','Seq10','Seq11','Seq12','TrainSeq','UntrainSeq'};
+        for n = 1:length(name)
+            fileList{n}=fullfile(['psc_sess' num2str(sessN) '_' name{n} '.nii']);
+            column_name{n} = fullfile(sprintf('Sess%d_%s.nii',sessN,name{n}));
+        end
+        for s=sn
+            for h=hemisphere
+                caretSDir = fullfile(caretDir,['x',subj_name{s}],hemName{h});
+                specname=fullfile(caretSDir,['x',subj_name{s} '.' hem{h}   '.spec']);
+                white=fullfile(caretSDir,[hem{h} '.WHITE.coord']);
+                pial=fullfile(caretSDir,[hem{h} '.PIAL.coord']);
+                
+                C1=caret_load(white);
+                C2=caret_load(pial);
+                
+                for f=1:length(fileList)
+                    images{f}=fullfile(glmSessDir{sessN},subj_name{s},fileList{f});
+                end;
+                metric_out = fullfile(caretSDir,sprintf('%s_Contrasts_sess%d.metric',subj_name{s},sessN));
+                M=caret_vol2surf_own(C1.data,C2.data,images,'ignore_zeros',1);
+                M.column_name = column_name;
+                caret_save(metric_out,M);
+                fprintf('Subj %d, Hem %d\n',s,h);
+                
+                if smooth == 1;
+                    % Smooth output .metric file (optional)
+                    % Load .topo file
+                    closed = fullfile(caretSDir,[hem{h} '.CLOSED.topo']);
+                    Out = caret_smooth(metric_out, 'coord', white, 'topo', closed);%,...
+                    %'algorithm','FWHM','fwhm',12);
+                    char(Out);  % if smoothed adds an 's'
+                else
+                end;
+                
+            end;
+        end;  
     case 'SEARCH_define'                                                    % STEP 4.1a   :  Defines searchlights for 120 voxels in grey matter surface
         vararginoptions(varargin,{'sn','sessN'});
         
@@ -3171,7 +3213,7 @@ switch(what)
         % estimating the dimensionality of patterns 
         % cumulative sum of eig of G
         sn=1;
-        reg=2;
+        reg=3;
         vararginoptions(varargin,{'sn','reg'});
         for s = 1:4;    % all sessions
             To = load(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',s)));
@@ -3285,24 +3327,29 @@ switch(what)
             end
         end
         figure;
-        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance trained');
         
         figure;
-        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance untrained');
         
         figure;
-        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance cross-seq');
         
         
         figure;
-        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Betas trained');
         
         figure;
-        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Betas untrained');
         
        % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]

@@ -66,7 +66,7 @@ seqDir = '/Users/eberlot/Documents/Data/SuperMotorLearning/stimuli_struct';
 
 cd(baseDir);
 
-rng('shuffle');
+rng('default');
 
 Seq1 = [1 5 3 5 3 4 3 1 5; ...
         1 5 2 1 4 5 3 4 2; ...
@@ -148,7 +148,7 @@ switch what
 
     Trials = 1:70;  % 7 chunks - each repeated 10 times (5 doubles)
 
-    runs = 36;
+    runs = 44;
 
     for e = 1:runs
         ChunkLearn_G1.cueS = cellstr(repmat('£',length(Trials),1));
@@ -261,7 +261,7 @@ switch what
 
     Trials = 1:24;       
 
-    runs = 88;
+    runs = 174;
 
     for e = 1:runs
 
@@ -367,7 +367,7 @@ switch what
     % sequence presented twice in a row 
     % each sequence pair (FoSEx) repeated twice per block - 4x6 = 24 trials per block
 
-    runs = 4;
+    runs = 6;
     trial_run = 24;
 
     Trials = 1:(runs*trial_run);  % 4 blocks of 24
@@ -375,7 +375,12 @@ switch what
     SeqG1 = RandomSeq(1:12,:);
     SeqG2 = RandomSeq(1:12,:);
 
-    X = [sample_wor(1:size(SeqG1,1),size(SeqG1,1));sample_wor(1:size(SeqG1,1),size(SeqG1,1));sample_wor(1:size(SeqG1,1),size(SeqG1,1));sample_wor(1:size(SeqG1,1),size(SeqG1,1))];
+    X = [sample_wor(1:size(SeqG1,1),size(SeqG1,1));...
+        sample_wor(1:size(SeqG1,1),size(SeqG1,1));...
+        sample_wor(1:size(SeqG1,1),size(SeqG1,1));...
+        sample_wor(1:size(SeqG1,1),size(SeqG1,1));...
+        sample_wor(1:size(SeqG1,1),size(SeqG1,1));...
+        sample_wor(1:size(SeqG1,1),size(SeqG1,1))];
 
     BeforeLearn_G1.cueC = cellstr(repmat('£',length(Trials),1));
     BeforeLearn_G2.cueC = cellstr(repmat('£',length(Trials),1));
@@ -605,7 +610,7 @@ switch what
     sequencesG1 = [SeqG1;RandomSeq(1:6,:)]; 
     sequencesG2 = [SeqG2;RandomSeq(1:6,:)];
 
-    runs=4;
+    runs=2;
 
     seqforRandG1 = [sequencesG1;sequencesG1;sequencesG1];
     seqforRandG2 = [sequencesG2;sequencesG2;sequencesG2];
@@ -1024,7 +1029,7 @@ switch what
     sequencesG1 = [SeqG1;RandomSeq(1:6,:)];
     sequencesG2 = [SeqG2;RandomSeq(1:6,:)];
 
-    runs=2;
+    runs=1;
 
     seqforRandG1 = [sequencesG1;sequencesG1;sequencesG1];
     seqforRandG2 = [sequencesG2;sequencesG2;sequencesG2];

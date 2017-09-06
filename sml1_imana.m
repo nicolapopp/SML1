@@ -412,9 +412,9 @@ switch(what)
                     fprintf('Rename this file to ''%s_anatomical_raw.nii'' in the anatomical folder.\n',subj_name{s});
                 case 'fieldmap'
                     fprintf('Subject %s fieldmaps imported.\n',subj_name{s});
-                    fieldmapfold = fullfile(fieldmapDir,subj_name{s},[subj_name{s},sprintf('_%d',sessN)]);
+                    fieldmapfold = fullfile(fieldmapDir,subj_name{s},sprintf('sess%d',sessN));
                     dircheck(fieldmapfold);
-                    fprintf('The subfolder ''%s_%d'' in the subject fieldmap folder ''%s'' was created for you.\n',subj_name{s},sessN,subj_name{s});
+                    fprintf('The subfolder ''sess%d'' in the subject fieldmap folder ''%s'' was created for you.\n',sessN,subj_name{s});
                     fprintf('Please locate the magnitude and phase files (different series).\n');
                     fprintf('Rename the files into ''%s_magnitude.nii'' and ''%s_phase.nii''.\n',subj_name{s},subj_name{s});
             end
@@ -435,36 +435,45 @@ switch(what)
     case 'PREP_make_4dNifti'                                                % STEP 1.4       :  Converts dicoms to 4D niftis out of your raw data files
         vararginoptions(varargin,{'sn','sessN'});
         for s = sn
-            % For each functional run
-            for i = 1:length(fscanNum{sessN}{s})                                      
-                outfilename = fullfile(imagingDirRaw,subj_name{s},sprintf('%s_run_%2.2d.nii',subj_name{s},run_num{sessN}(i)));
-                % Create a 4d nifti of all functional imgs in this run.
-                % Don't include the first few dummy scans in this 4d nifti.
-               P={};
-                for j = 1:(numTRs(i)-numDummys)                                        
-                    P{j}=fullfile(dicomDir,[subj_name{s},sprintf('_%d',sessN)],sprintf('series%2.2d',fscanNum{sessN}{s}(i)),...
-                        sprintf('f%s-%4.4d-%5.5d-%6.6d-01.nii',NiiRawName{sessN}{s},fscanNum{sessN}{s}(i),j+numDummys,j+numDummys));
-                end;
-                dircheck(fullfile(imagingDirRaw,subj_name{s}))
-                spm_file_merge(char(P),outfilename);
-                fprintf('Run %d in session %d done -> overall run %d\n',i,sessN,run_num{sessN}(i));
-            end
-        end
+            for ss = 1:sessN
+                % For each functional run
+                for i = 1:length(fscanNum{sessN}{s})
+                    outfilename = fullfile(imagingDirRaw,subj_name{s},sprintf('sess%d',ss),sprintf('%s_run_%2.2d.nii',subj_name{s},run_num{ss}(i)));
+                    % Create a 4d nifti of all functional imgs in this run.
+                    % Don't include the first few dummy scans in this 4d nifti.
+                    P={};
+                    for j = 1:(numTRs(i)-numDummys)
+                        P{j}=fullfile(dicomDir,[subj_name{s},sprintf('_%d',ss)],sprintf('series%2.2d',fscanNum{ss}{s}(i)),...
+                            sprintf('f%s-%4.4d-%5.5d-%6.6d-01.nii',NiiRawName{ss}{s},fscanNum{ss}{s}(i),j+numDummys,j+numDummys));
+                    end;
+                    dircheck(fullfile(imagingDirRaw,subj_name{s},sprintf('sess%d',ss)))
+                    spm_file_merge(char(P),outfilename);
+                    fprintf('Run %d in session %d done -> overall run %d\n',i,ss,run_num{ss}(i));
+                end; % run
+            end; % session - ss
+        end; % sn
     case 'PREP_makefieldmap'                                                % STEP 1.5       :  Create field map
         prefix = '';
         vararginoptions(varargin,{'sn','sessN'});
-        subfolderFieldmap = sprintf('%s_%d',subj_name{sn},sessN);
-
-            %runs    = {'_01','_02','_03','_04','_05','_06','_07','_08','_09','_10'};
-      
-        spmj_makefieldmap(baseDir, subj_name{sn}, runs{sessN},'prefix',prefix,'subfolderFieldmap',subfolderFieldmap);
+        for ss=1:sessN
+            subfolderRawdata    = sprintf('sess%d',ss);
+            subfolderFieldmap   = sprintf('sess%d',ss);
+            
+            spmj_makefieldmap(baseDir, subj_name{sn}, runs{ss},'prefix',prefix,'subfolderRawdata',subfolderRawdata,'subfolderFieldmap',subfolderFieldmap);
+        end
     case 'PREP_make_realign_unwarp'                                         % STEP 1.6       :  Realign + unwarp functional runs
         prefix  ='';
         vararginoptions(varargin,{'sn','sessN'});
-        subfolderFieldmap = {sprintf('%s_%d',subj_name{sn},sessN)};
-        %runs   = {'_01','_02','_03','_04','_05','_06','_07','_08','_09','_10'};
+                
+        subfolderRawdata    = {'sess1','sess2','sess3','sess4'};
+        subfolderFieldmap   = {'sess1','sess2','sess3','sess4'};
+        subj_runs           = runs;
+        
+        subfolderRawdata    = subfolderRawdata(1:sessN);
+        subfolderFieldmap   = subfolderFieldmap(1:sessN);
+        subj_runs           = subj_runs(1:sessN);
 
-        spmj_realign_unwarp_sess(baseDir, subj_name{sn}, {runs{sessN}}, numTRs,'prefix',prefix,'subfolderFieldmap',subfolderFieldmap);
+        spmj_realign_unwarp_sess(baseDir, subj_name{sn}, subj_runs, numTRs, 'prefix',prefix, 'subfolderRawdata',subfolderRawdata,'subfolderFieldmap',subfolderFieldmap);      
     case 'PREP_plot_movementparameters'                                     % OPTIONAL       :  Investigate movement parameters
         vararginoptions(varargin,{'sn'});
         X=[];
@@ -494,23 +503,28 @@ switch(what)
         vararginoptions(varargin,{'sn','sessN'});
 
         prefix='';
-        dircheck(fullfile(baseDir, 'imaging_data',subj_name{sn}))
-        for r=1:numruns_sess;
-
-            source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{sessN}{r},'.nii']);
-            dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{sessN}{r},'.nii']);
-
-            copyfile(source,dest);
-            source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{sessN}{r},'.txt']);
-            dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{sessN}{r},'.txt']);
-
-            copyfile(source,dest);
-        end;
-        source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn}, ['meanu' prefix subj_name{sn},'_run',runs{1}{1},'.nii']); %first run of first session used for mean
-        dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['meanepi_' subj_name{sn} '.nii']);
-
-        copyfile(source,dest);
-
+        dircheck(fullfile(baseDir, 'imaging_data',subj_name{sn}));
+        for ss=1:sessN;
+            disp(['Sess' num2str(ss)]);
+            for r=1:numruns_sess;
+                
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['u' prefix subj_name{sn},'_run',runs{ss}{r},'.nii']);
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['u' prefix subj_name{sn},'_run',runs{ss}{r},'.nii']);
+                
+                copyfile(source,dest);
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['rp_' subj_name{sn},'_run',runs{ss}{r},'.txt']);
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run',runs{ss}{r},'.txt']);
+                
+                copyfile(source,dest);
+            end;
+            
+            if ss == 1
+                source = fullfile(baseDir, 'imaging_data_raw',subj_name{sn},sprintf('sess%d',ss), ['meanu' prefix subj_name{sn},'_run',runs{1}{1},'.nii']); %first run of first session used for mean
+                dest = fullfile(baseDir, 'imaging_data',subj_name{sn}, ['meanepi_' subj_name{sn} '.nii']);
+                
+                copyfile(source,dest);
+            end
+        end   
 
     %__________________________________________________________________
     case 'PREP_meanimage_bias_correction'                                   % STEP 1.8       :  Bias correct mean image prior to coregistration
@@ -680,10 +694,9 @@ switch(what)
                     sprintf('%s%s_run_%2.2d.nii,%d',prefix, subj_name{sn},r,i));
             end;
         end;
-
-        % Run spmj_makesamealign_nifti to bring all functional runs into
-        % same space as realigned mean epis
         spmj_makesamealign_nifti(char(P),char(Q));
+        % Run spmj_makesamealign_nifti to bring all functional runs into
+        % same space as realigned mean epis  
     case 'PREP_check_samealign'                                             % OPTIONAL      :  Check if all functional scans are align to the anatomical
         prefix='u';
         vararginoptions(varargin,{'sn'});
@@ -928,6 +941,12 @@ switch(what)
     
     case '3b_GLM_SESS' % ------------- GLM per session! ------------------
         % makes the glm per subject and per session
+    case 'GLM_sess_all'
+        glm=2;
+        vararginoptions(varargin,{'sn','glm','sessN'});
+        sml1_imana('GLM_make_sess','sn',sn,'glm',glm,'sessN',sessN);
+        sml1_imana('GLM_estimate_sess','sn',sn,'sessN',sessN);
+        sml1_imana('GLM_contrast_sess','sn',sn,'sessN',sessN);
     case 'GLM_make_sess'
         % makes the GLM file for each subject, and a corresponding 
         % SPM_info.mat file. The latter file contains nice summary
@@ -959,144 +978,150 @@ switch(what)
                 cvi_type   = 'fast';
         end
 
-        % Loop through subjects and make SPM files.
-        for s = sn
-            D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));     
-             
-            % Do some subject structure fields.
-            dircheck(fullfile(glmSessDir{sessN}, subj_name{s}));
-            J.dir 			 = {fullfile(glmSessDir{sessN}, subj_name{s})};
-            J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
-            J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
-            J.timing.fmri_t  = 16;
-            J.timing.fmri_t0 = 1;
-            
-            L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
-            if (sn==2 & sessN==3)
-                uniqrun = [181,182,191,184,185,186,187,188,189,190];
-            elseif (sn==2 & sessN==4)
-                uniqrun = [192,193,194,195,202,197,198,199,200,201];
-            else
-                uniqrun = unique(L.BN);
-            end
-            % Loop through runs. 
-            for r = 1:numruns_task_sess                                            
-                R = getrow(L,L.BN==uniqrun(run_task(1,r))); % 1-8 func runs of the session
-                %R = getrow(D,D.BN==run_num{sessN}(run_task(sessN,r)));  
-                for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
-                    
-                   N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
-                        [prefix subj_name{s},'_run',runs{sessN}{run_task(1,r)},'.nii,',num2str(i)])];
-                    
-                end;     
-                J.sess(r).scans = N;                                        % number of scans in run
-                % Loop through conditions.
-                           
-                for c = 1:numel(num_seq)
-                    idx						   = find(R.seqNumb==c);             % find indx of all trials in run - 1:6 trained; 7-12 untrained
-                    condName = sprintf('SeqNumb-%d',R.seqNumb(idx(1)));
-                    J.sess(r).cond(c).name 	   = condName;
-                    % Correct start time for numDummys removed & convert to seconds 
-                    J.sess(r).cond(c).onset    = [R.startTimeReal(idx)/1000 - J.timing.RT*numDummys + announceTime + delay(sn)];    
-                    J.sess(r).cond(c).duration = dur;                       % durations of task we are modeling (not length of entire trial)
-           
-                    J.sess(r).cond(c).tmod     = 0;
-                    J.sess(r).cond(c).orth     = 0;
-                    J.sess(r).cond(c).pmod     = struct('name', {}, 'param', {}, 'poly', {});
-					
-                    % Do some subject info for fields in SPM_info.mat.
-                    S.SN    		= s;
-                    S.run   		= r;    % 1-8: functional runs
-                    S.runAll        = (sessN-1)*8 + r;  % 1-32
-                    S.seqNumb 		= R.seqNumb(idx(1));
-                    S.seqType    	= R.seqType(idx(1));
-                    S.isMetronome   = R.isMetronome(idx(1));
-                    S.ScanSess      = R.ScanSess(idx(1));
-                    T				= addstruct(T,S);
-                end;
+        % Loop through subjects / all sessions and make SPM files.
+        for ss = 1: sessN
+            T=[];
+            for s = sn
+                D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
+                
+                % Do some subject structure fields.
+                dircheck(fullfile(glmSessDir{ss}, subj_name{s}));
+                J.dir 			 = {fullfile(glmSessDir{ss}, subj_name{s})};
+                J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
+                J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
+                J.timing.fmri_t  = 16;
+                J.timing.fmri_t0 = 1;
+                
+                L = getrow(D,D.ScanSess==ss);    % only blocks of that scan session
+                if (sn==2 & ss==3)
+                    uniqrun = [181,182,191,184,185,186,187,188,189,190];
+                elseif (sn==2 & ss==4)
+                    uniqrun = [192,193,194,195,202,197,198,199,200,201];
+                else
+                    uniqrun = unique(L.BN);
+                end
+                % Loop through runs.
+                for r = 1:numruns_task_sess
+                    R = getrow(L,L.BN==uniqrun(run_task(1,r))); % 1-8 func runs of the session
+                    %R = getrow(D,D.BN==run_num{sessN}(run_task(sessN,r)));
+                    for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
                         
-                % Add any additional regressors here.
-                J.sess(r).multi 	= {''};
-                J.sess(r).regress 	= struct('name', {}, 'val', {});
-                J.sess(r).multi_reg = {''};                                
-                % Define high pass filter cutoff (in seconds): see glm cases.
-                J.sess(r).hpf 		= hrf_cutoff;
-            end;
-            J.fact 			   = struct('name', {}, 'levels', {});
-            J.bases.hrf.derivs = [0 0];
-            J.bases.hrf.params = hrf_params;    % make it subject specific
-            J.volt 			   = 1;
-            J.global 		   = 'None';
-            J.mask 	           = {fullfile(baseDir, 'imaging_data',subj_name{s}, 'rmask_noskull.nii,1')};
-            J.mthresh 		   = 0.05;
-            J.cvi_mask 		   = {fullfile(baseDir, 'imaging_data',subj_name{s},'rmask_gray.nii')};
-            J.cvi 			   = cvi_type;
-            % Save the GLM file for this subject.
-            spm_rwls_run_fmri_spec(J);        
-            % Save the aux. information file (SPM_info.mat).
-            % This file contains user-friendly information about the glm
-            % model, regressor types, condition names, etc.
-            save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
-            
-        end;
+                        N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
+                            [prefix subj_name{s},'_run',runs{sessN}{run_task(1,r)},'.nii,',num2str(i)])];
+                        
+                    end;
+                    J.sess(r).scans = N;                                        % number of scans in run
+                    % Loop through conditions.
+                    
+                    for c = 1:numel(num_seq)
+                        idx						   = find(R.seqNumb==c);             % find indx of all trials in run - 1:6 trained; 7-12 untrained
+                        condName = sprintf('SeqNumb-%d',R.seqNumb(idx(1)));
+                        J.sess(r).cond(c).name 	   = condName;
+                        % Correct start time for numDummys removed & convert to seconds
+                        J.sess(r).cond(c).onset    = [R.startTimeReal(idx)/1000 - J.timing.RT*numDummys + announceTime + delay(sn)];
+                        J.sess(r).cond(c).duration = dur;                       % durations of task we are modeling (not length of entire trial)
+                        
+                        J.sess(r).cond(c).tmod     = 0;
+                        J.sess(r).cond(c).orth     = 0;
+                        J.sess(r).cond(c).pmod     = struct('name', {}, 'param', {}, 'poly', {});
+                        
+                        % Do some subject info for fields in SPM_info.mat.
+                        S.SN    		= s;
+                        S.run   		= r;    % 1-8: functional runs
+                        S.runAll        = (ss-1)*8 + r;  % 1-32
+                        S.seqNumb 		= R.seqNumb(idx(1));
+                        S.seqType    	= R.seqType(idx(1));
+                        S.isMetronome   = R.isMetronome(idx(1));
+                        S.ScanSess      = R.ScanSess(idx(1));
+                        T				= addstruct(T,S);
+                    end;
+                    
+                    % Add any additional regressors here.
+                    J.sess(r).multi 	= {''};
+                    J.sess(r).regress 	= struct('name', {}, 'val', {});
+                    J.sess(r).multi_reg = {''};
+                    % Define high pass filter cutoff (in seconds): see glm cases.
+                    J.sess(r).hpf 		= hrf_cutoff;
+                end;
+                J.fact 			   = struct('name', {}, 'levels', {});
+                J.bases.hrf.derivs = [0 0];
+                J.bases.hrf.params = hrf_params;    % make it subject specific
+                J.volt 			   = 1;
+                J.global 		   = 'None';
+                J.mask 	           = {fullfile(baseDir, 'imaging_data',subj_name{s}, 'rmask_noskull.nii,1')};
+                J.mthresh 		   = 0.05;
+                J.cvi_mask 		   = {fullfile(baseDir, 'imaging_data',subj_name{s},'rmask_gray.nii')};
+                J.cvi 			   = cvi_type;
+                % Save the GLM file for this subject.
+                spm_rwls_run_fmri_spec(J);
+                % Save the aux. information file (SPM_info.mat).
+                % This file contains user-friendly information about the glm
+                % model, regressor types, condition names, etc.
+                save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
+                
+            end;    % sn
+        end;    % sessN
     case 'GLM_estimate_sess'
         % Estimate the GLM from the appropriate SPM.mat file. 
         % Make GLM files with case 'GLM_make'.
         vararginoptions(varargin,{'sn','sessN'});
-
-        for s = sn
-            % Load files
-            load(fullfile(glmSessDir{sessN},subj_name{s},'SPM.mat'));
-            SPM.swd = fullfile(glmSessDir{sessN},subj_name{s});
-            % Run the GLM.
-            spm_rwls_spm(SPM);
-        end;
+        
+        for ss = 1:sessN
+            for s = sn
+                % Load files
+                load(fullfile(glmSessDir{ss},subj_name{s},'SPM.mat'));
+                SPM.swd = fullfile(glmSessDir{ss},subj_name{s});
+                % Run the GLM.
+                spm_rwls_spm(SPM);
+            end; % sn
+        end; % sessN
         % for checking -returns img of head movements and corrected sd vals
         % spm_rwls_resstats(SPM)
     case 'GLM_contrast_sess'
         % enter sn, sessN #
         % 1:   Trained seq vs. rest
         % 2:   Novel seq vs. rest
- 
+        
         vararginoptions(varargin,{'sn','sessN'});
         cwd = pwd;
-        % Loop through subjects.
-        for s = sn
-            glmSubjDir = [glmSessDir{sessN} filesep subj_name{s}];
-            cd(glmSubjDir);
-
-            load SPM;
-            SPM = rmfield(SPM,'xCon');
-            T   = load('SPM_info.mat');
-            
-            nrun    = numel(SPM.nscan);
-            tt      = repmat([1:numel(num_seq)],1,nrun);
-            
-            % (1) t contrasts each sequence against rest
-            % (1:12)
-            for c = 1:numel(num_seq)
-                con = zeros(1,size(SPM.xX.X,2));
-                con(tt==c) = 1;
-                con = con/sum(con);
-                SPM.xCon(c) = spm_FcUtil('Set',sprintf('Seq%d',c), 'T', 'c',con',SPM.xX.xKXs);
-            end
-            
-            % (2) t contrast for trained seq vs. rest
-            con                = zeros(1,size(SPM.xX.X,2));
-            con(:,T.seqNumb<7) = 1;
-            con                = con/sum(con);
-            SPM.xCon(end+1)    = spm_FcUtil('Set',sprintf('TrainSeq'), 'T', 'c',con',SPM.xX.xKXs);
-            
-            % (3) t contrast for novel seq vs. rest
-            con                = zeros(1,size(SPM.xX.X,2));
-            con(:,T.seqNumb>6 & T.seqNumb<13)  = 1;
-            con                = con/sum(con);
-            SPM.xCon(end+1)    = spm_FcUtil('Set',sprintf('UntrainSeq'), 'T', 'c',con',SPM.xX.xKXs);
-   
-            %____do the constrasts
-            SPM = spm_contrasts(SPM,[1:length(SPM.xCon)]);
-            save('SPM.mat','SPM');
-            
+        for ss = 1:sessN
+            % Loop through subjects.
+            for s = sn
+                glmSubjDir = [glmSessDir{ss} filesep subj_name{s}];
+                cd(glmSubjDir);
+                
+                load SPM;
+                SPM = rmfield(SPM,'xCon');
+                T   = load('SPM_info.mat');
+                
+                nrun    = numel(SPM.nscan);
+                tt      = repmat([1:numel(num_seq)],1,nrun);
+                
+                % (1) t contrasts each sequence against rest
+                % (1:12)
+                for c = 1:numel(num_seq)
+                    con = zeros(1,size(SPM.xX.X,2));
+                    con(tt==c) = 1;
+                    con = con/sum(con);
+                    SPM.xCon(c) = spm_FcUtil('Set',sprintf('Seq%d',c), 'T', 'c',con',SPM.xX.xKXs);
+                end
+                
+                % (2) t contrast for trained seq vs. rest
+                con                = zeros(1,size(SPM.xX.X,2));
+                con(:,T.seqNumb<7) = 1;
+                con                = con/sum(con);
+                SPM.xCon(end+1)    = spm_FcUtil('Set',sprintf('TrainSeq'), 'T', 'c',con',SPM.xX.xKXs);
+                
+                % (3) t contrast for novel seq vs. rest
+                con                = zeros(1,size(SPM.xX.X,2));
+                con(:,T.seqNumb>6 & T.seqNumb<13)  = 1;
+                con                = con/sum(con);
+                SPM.xCon(end+1)    = spm_FcUtil('Set',sprintf('UntrainSeq'), 'T', 'c',con',SPM.xX.xKXs);
+                
+                %____do the constrasts
+                SPM = spm_contrasts(SPM,[1:length(SPM.xCon)]);
+                save('SPM.mat','SPM');
+                
                 % rename contrast images and spmT images
                 conName = {'con','spmT'};
                 for i=1:length(SPM.xCon),
@@ -1106,18 +1131,25 @@ switch(what)
                         movefile(oldName{i},newName{i});
                     end
                 end
-        end;
+            end; % sn
+        end; % sessN
         cd(cwd);
         
     case '3c_GLM_FoSEx' % ------- GLM with separate regressors for first / second execution --
         % fits regressors separately for FoSEx
+    case 'GLM_FoSEx_all'
+        glm=2;
+        vararginoptions(varargin,{'sn','glm','sessN'});
+        sml1_imana('GLM_make_FoSEx','sn',sn,'glm',glm,'sessN',sessN);
+        sml1_imana('GLM_estimate_FoSEx','sn',sn,'sessN',sessN);
+        sml1_imana('GLM_contrast_FoSEx','sn',sn,'sessN',sessN);
     case 'GLM_make_FoSEx'
         % functional runs - separate regressors for first / second execution
         % makes the GLM file for each subject, and a corresponding
         % SPM_info.mat file. The latter file contains nice summary
         % information of the model regressors, condition names, etc.
         
-        glm = 2;  
+        glm = 2;
         vararginoptions(varargin,{'sn','glm','sessN'});
         % Set some constants.
         prefix		 = 'u';
@@ -1141,22 +1173,23 @@ switch(what)
                 cvi_type   = 'fast';
         end
         
-        % Loop through subjects and make SPM files.
-        for s = sn
-            D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
-            
-            % Do some subject structure fields.
-            dircheck(fullfile(glmFoSExDir{sessN}, subj_name{s}));
-            J.dir 			 = {fullfile(glmFoSExDir{sessN}, subj_name{s})};
-            J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
-            J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
-            J.timing.fmri_t  = 16;
-            J.timing.fmri_t0 = 1;
-            
-            L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
-            uniqrun = unique(L.BN);
-            
-            % Loop through sessions
+        for ss = 1: sessN
+            % Loop through subjects and make SPM files.
+            for s = sn
+                D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
+                
+                % Do some subject structure fields.
+                dircheck(fullfile(glmFoSExDir{ss}, subj_name{s}));
+                J.dir 			 = {fullfile(glmFoSExDir{ss}, subj_name{s})};
+                J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
+                J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
+                J.timing.fmri_t  = 16;
+                J.timing.fmri_t0 = 1;
+                
+                L = getrow(D,D.ScanSess==ss);    % only blocks of that scan session
+                uniqrun = unique(L.BN);
+                
+                % Loop through sessions
                 % Loop through runs.
                 for r = 1:numruns_task_sess       % 8 functional runs
                     R = getrow(L,L.BN==uniqrun(run_task(1,r)));                 % 1-8 func runs of the session
@@ -1184,7 +1217,7 @@ switch(what)
                             % Do some subject info for fields in SPM_info.mat.
                             S.SN    		= s;
                             S.run   		= r;    % 1-8: functional runs
-                            S.runAll        = (sessN-1)*8 + r;  % 1-32
+                            S.runAll        = (ss-1)*8 + r;  % 1-32
                             S.seqNumb 		= R.seqNumb(idx(1));
                             S.seqType    	= R.seqType(idx(1));
                             S.FoSEx         = R.FoSEx(idx(1));
@@ -1200,35 +1233,38 @@ switch(what)
                     % Define high pass filter cutoff (in seconds): see glm cases.
                     J.sess(r).hpf 		= hrf_cutoff;
                 end;    % runs
-            
-            J.fact 			   = struct('name', {}, 'levels', {});
-            J.bases.hrf.derivs = [0 0];
-            J.bases.hrf.params = hrf_params;    % make it subject specific
-            J.volt 			   = 1;
-            J.global 		   = 'None';
-            J.mask 	           = {fullfile(baseDir, 'imaging_data',subj_name{s}, 'rmask_noskull.nii,1')};
-            J.mthresh 		   = 0.05;
-            J.cvi_mask 		   = {fullfile(baseDir, 'imaging_data',subj_name{s},'rmask_gray.nii')};
-            J.cvi 			   = cvi_type;
-            % Save the GLM file for this subject.
-            spm_rwls_run_fmri_spec(J);
-            % Save the aux. information file (SPM_info.mat).
-            % This file contains user-friendly information about the glm
-            % model, regressor types, condition names, etc.
-            save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
-            
-        end;
+                
+                J.fact 			   = struct('name', {}, 'levels', {});
+                J.bases.hrf.derivs = [0 0];
+                J.bases.hrf.params = hrf_params;    % make it subject specific
+                J.volt 			   = 1;
+                J.global 		   = 'None';
+                J.mask 	           = {fullfile(baseDir, 'imaging_data',subj_name{s}, 'rmask_noskull.nii,1')};
+                J.mthresh 		   = 0.05;
+                J.cvi_mask 		   = {fullfile(baseDir, 'imaging_data',subj_name{s},'rmask_gray.nii')};
+                J.cvi 			   = cvi_type;
+                % Save the GLM file for this subject.
+                spm_rwls_run_fmri_spec(J);
+                % Save the aux. information file (SPM_info.mat).
+                % This file contains user-friendly information about the glm
+                % model, regressor types, condition names, etc.
+                save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
+                
+            end; % sn
+        end; % sessN
     case 'GLM_estimate_FoSEx'
         % Estimate the GLM from the appropriate SPM.mat file. 
         % Make GLM files with case 'GLM_make'.
         vararginoptions(varargin,{'sn','sessN'});
+        for ss = 1:sessN
         for s = sn
             % Load files
-            load(fullfile(glmFoSExDir{sessN},subj_name{s},'SPM.mat'));
-            SPM.swd = fullfile(glmFoSExDir{sessN},subj_name{s});
+            load(fullfile(glmFoSExDir{ss},subj_name{s},'SPM.mat'));
+            SPM.swd = fullfile(glmFoSExDir{ss},subj_name{s});
             % Run the GLM.
             spm_rwls_spm(SPM);
-        end;
+        end; % sn
+        end; % sessN
         % for checking -returns img of head movements and corrected sd vals
         % spm_rwls_resstats(SPM)
     case 'GLM_contrast_FoSEx'  
@@ -1242,8 +1278,9 @@ switch(what)
         vararginoptions(varargin,{'sn','sessN'});
         cwd = pwd;
         % Loop through subjects.
+        for ss = 1:sessN
         for s = sn
-            glmSubjDir = [glmFoSExDir{sessN} filesep subj_name{s}];
+            glmSubjDir = [glmFoSExDir{ss} filesep subj_name{s}];
             cd(glmSubjDir);
 
             load SPM;
@@ -1286,7 +1323,8 @@ switch(what)
                         movefile(oldName{i},newName{i});
                     end
                 end
-        end;
+        end; % sn
+        end; % sessN
         cd(cwd);
         
     case '3d_GLM_LOC'  %  ------- localizer GLM across the 4 sessions ------- % 
@@ -1409,7 +1447,8 @@ switch(what)
             SPM.swd = fullfile(glmLocDir{glm},subj_name{s});
             % Run the GLM.
             spm_rwls_spm(SPM);
-        end;
+        end; % sn
+        
         % for checking -returns img of head movements and corrected sd vals
         % spm_rwls_resstats(SPM)    
     case 'GLM_contrast_LOC'                                           % STEP 3.6a  :  Make t-contsmlrasts - any / every finger vs. rest.
@@ -3200,7 +3239,7 @@ switch(what)
         % estimating the dimensionality of patterns 
         % cumulative sum of eig of G
         sn=1;
-        reg=2;
+        reg=3;
         vararginoptions(varargin,{'sn','reg'});
         for s = 1:4;    % all sessions
             To = load(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',s)));
@@ -3314,24 +3353,29 @@ switch(what)
             end
         end
         figure;
-        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance trained');
         
         figure;
-        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance untrained');
         
         figure;
-        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Distance cross-seq');
         
         
         figure;
-        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Betas trained');
         
         figure;
-        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5));
+        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        drawline(0,'dir','horz');
         title('Betas untrained');
         
        % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]
