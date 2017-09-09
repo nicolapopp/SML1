@@ -1,4 +1,4 @@
-function varargout=sml1_imana(what,varargin)
+function varargout=sml1_imana2(what,varargin)
 
 % ------------------------- Directories -----------------------------------
 baseDir         ='/Users/eberlot/Documents/Data/SuperMotorLearning';

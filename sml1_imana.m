@@ -44,13 +44,13 @@ numruns_task_sess = 8;
 numruns_loc_sess  = 2;
 
 % total - per subject (the total in the end will always be 40)
-numruns           = [40 40 30 20];
+numruns           = [40 40 40 20 10];
 numruns_task      = 32;
 numruns_loc       = 8;
 
 sess = [repmat(1,1,10),repmat(2,1,10),repmat(3,1,10),repmat(4,1,10)];   % all sessions
 
-sess_sn = [4,4,3,2];    % per subject
+sess_sn = [4,4,4,2,1];    % per subject
 
 run_task   = [1:3 5:7 9:10;
               11:13 15:17 19:20;
@@ -107,21 +107,23 @@ regType=[1:8  1:8]; % cortical areas: 1-7, BG: 8-11, cereb: 12-14
 %           (note: there values are not [0 0 0] in the MNI coordinate)
 %   Step 3: set those values into loc_AC (subtract from zero)
 
-subj_name  = {'s01','s02','s03','s04'};  
+subj_name  = {'s01','s02','s03','s04','s05'};  
 
 
 % different sessions denoted with {}
 DicomName{1}  = {'2017_07_18_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_07_25_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_07_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_08_08_S04.MR.DIEDRICHSEN_LONGSEQLEARN'};             
+                 '2017_08_08_S04.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_09_05_S05.MR.DIEDRICHSEN_LONGSEQLEARN'};             
 DicomName{2}  = {'2017_07_25_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_01_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_01_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_15_S04.MR.DIEDRICHSEN_LONGSEQLEARN'};
 DicomName{3}  = {'2017_08_15_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_22_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_08_23_S03.MR.DIEDRICHSEN_LONGSEQLEARN'};             
+                 '2017_08_23_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_09_06_S04.MR.DIEDRICHSEN_LONGSEQLEARN'};             
 DicomName{4}  = {'2017_08_16_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_23_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN'};
@@ -130,7 +132,8 @@ DicomName{4}  = {'2017_08_16_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
 NiiRawName{1} = {'170718114530DST131221107523418932',...
                  '170725105405DST131221107523418932',...
                  '170725090958DST131221107523418932',...
-                 '170808113354DST131221107523418932'};
+                 '170808113354DST131221107523418932',...
+                 '170905134655DST131221107523418932'};
 NiiRawName{2} = {'170725124629DST131221107523418932',...
                  '170801131823DST131221107523418932',...
                  '170801113315DST131221107523418932',...
@@ -145,14 +148,16 @@ NiiRawName{4}  = {'170816090254DST131221107523418932',...
 fscanNum{1}   = {[16 18 20 22 24 26 28 30 32 34],...
                  [16 18 20 22 24 26 28 30 32 34],...
                  [17 19 21 23 25 27 29 31 33 35],...
-                 [16 18 20 22 24 26 28 30 32 34]};             
+                 [16 18 20 22 24 26 28 30 32 34],...
+                 [19 21 23 25 27 29 31 33 35 37]};             
 fscanNum{2}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 33 35 23 25 27 31]};    % note - blocks 5 and 6 were repeated at the end (subject coughing)
 fscanNum{3}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 31 17 19 21 23 25 27 29],...  % note - block 3 was repeated at the end (problem with TR)
-                 [11 13 15 17 19 21 23 25 27 29]};  
+                 [11 13 15 17 19 21 23 25 27 29],...
+                 [12 14 16 18 20 22 24 26 28 30]};  
 fscanNum{4}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 31 21 23 25 27 29],...  % note - block 5 repeated at the end (high error rate)
                  [11 13 15 17 19 21 23 25 27 29]};    
@@ -160,14 +165,16 @@ fscanNum{4}   = {[11 13 15 17 19 21 23 25 27 29],...
 fieldNum{1}   = {[35,36],...
                  [35,36],...
                  [36,37],...
-                 [35,36]};
+                 [35,36],...
+                 [38,39]};
 fieldNum{2}   = {[30,31],...
                  [30,31],...
                  [30,31],...
                  [36,37]};
 fieldNum{3}   = {[30,31],...
                  [32,33],...
-                 [30,31]};
+                 [30,31],...
+                 [31,32]};
 fieldNum{4}   = {[30,31],...
                  [32,33],...
                  [30,31]};
@@ -175,12 +182,14 @@ fieldNum{4}   = {[30,31],...
 anatNum    = {[10:14],...
               [10:14],...
               [11:15],...
-              [10:14]};  
+              [10:14],...
+              [11:15]};  
           
 loc_AC     = {[-112 -165 -176],...
               [-106 -173 -163],...
               [-107 -178 -163],...
-              [-103 -162 -167]};
+              [-103 -162 -167],...
+              [-105 -163 -163]};
 
 % Other random notes %
 
@@ -189,7 +198,7 @@ loc_AC     = {[-112 -165 -176],...
 % s02 - scan 4: run repeated / replaced 
 %       dat files: 192,193,194,195,202(!!!),197,198,199,200,201
 % s04 - scan 2: two runs repeated / replaced
-%       dat files: - ADD!!!!
+%       dat files: - 69,70,71,72,208 (!!!),209 (!!!),75,76,77,78
 
 
 % ------------------------------ Analysis Cases --------------------------------
@@ -959,7 +968,7 @@ switch(what)
         T			 = [];
         dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
         % adjusting hrf per subject & session based on extracted timeseries!  
-        delay     = [0.5 1 0 0];  
+        delay     = [0.5 1 1 0.5 1];  
 
         announceTime = 0;                                                 % length of task announce time - currently not used
         % Gather appropriate GLM presets.
@@ -979,24 +988,24 @@ switch(what)
         end
 
         % Loop through subjects / all sessions and make SPM files.
-        for ss = 1: sessN
-            T=[];
             for s = sn
                 D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
                 
                 % Do some subject structure fields.
-                dircheck(fullfile(glmSessDir{ss}, subj_name{s}));
-                J.dir 			 = {fullfile(glmSessDir{ss}, subj_name{s})};
+                dircheck(fullfile(glmSessDir{sessN}, subj_name{s}));
+                J.dir 			 = {fullfile(glmSessDir{sessN}, subj_name{s})};
                 J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
                 J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
                 J.timing.fmri_t  = 16;
                 J.timing.fmri_t0 = 1;
                 
-                L = getrow(D,D.ScanSess==ss);    % only blocks of that scan session
-                if (sn==2 & ss==3)
+                L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
+                if (sn==2 & sessN==3)
                     uniqrun = [181,182,191,184,185,186,187,188,189,190];
-                elseif (sn==2 & ss==4)
+                elseif (sn==2 & sessN==4)
                     uniqrun = [192,193,194,195,202,197,198,199,200,201];
+                elseif (sn==4 & sessN==2)
+                    uniqrun = [69,70,71,72,208,209,75,76,77,78];
                 else
                     uniqrun = unique(L.BN);
                 end
@@ -1028,7 +1037,7 @@ switch(what)
                         % Do some subject info for fields in SPM_info.mat.
                         S.SN    		= s;
                         S.run   		= r;    % 1-8: functional runs
-                        S.runAll        = (ss-1)*8 + r;  % 1-32
+                        S.runAll        = (sessN-1)*8 + r;  % 1-32
                         S.seqNumb 		= R.seqNumb(idx(1));
                         S.seqType    	= R.seqType(idx(1));
                         S.isMetronome   = R.isMetronome(idx(1));
@@ -1060,21 +1069,18 @@ switch(what)
                 save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
                 
             end;    % sn
-        end;    % sessN
     case 'GLM_estimate_sess'
         % Estimate the GLM from the appropriate SPM.mat file. 
         % Make GLM files with case 'GLM_make'.
         vararginoptions(varargin,{'sn','sessN'});
         
-        for ss = 1:sessN
             for s = sn
                 % Load files
-                load(fullfile(glmSessDir{ss},subj_name{s},'SPM.mat'));
-                SPM.swd = fullfile(glmSessDir{ss},subj_name{s});
+                load(fullfile(glmSessDir{sessN},subj_name{s},'SPM.mat'));
+                SPM.swd = fullfile(glmSessDir{sessN},subj_name{s});
                 % Run the GLM.
                 spm_rwls_spm(SPM);
             end; % sn
-        end; % sessN
         % for checking -returns img of head movements and corrected sd vals
         % spm_rwls_resstats(SPM)
     case 'GLM_contrast_sess'
@@ -1084,10 +1090,10 @@ switch(what)
         
         vararginoptions(varargin,{'sn','sessN'});
         cwd = pwd;
-        for ss = 1:sessN
+
             % Loop through subjects.
             for s = sn
-                glmSubjDir = [glmSessDir{ss} filesep subj_name{s}];
+                glmSubjDir = [glmSessDir{sessN} filesep subj_name{s}];
                 cd(glmSubjDir);
                 
                 load SPM;
@@ -1132,7 +1138,7 @@ switch(what)
                     end
                 end
             end; % sn
-        end; % sessN
+
         cd(cwd);
         
     case '3c_GLM_FoSEx' % ------- GLM with separate regressors for first / second execution --
@@ -1174,6 +1180,7 @@ switch(what)
         end
         
         for ss = 1: sessN
+            T=[];
             % Loop through subjects and make SPM files.
             for s = sn
                 D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
@@ -1196,7 +1203,7 @@ switch(what)
                     for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
                         
                         N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
-                            [prefix subj_name{s},'_run',runs{sessN}{run_task(1,r)},'.nii,',num2str(i)])];
+                            [prefix subj_name{s},'_run',runs{ss}{run_task(1,r)},'.nii,',num2str(i)])];
                         
                     end;
                     J.sess(r).scans = N;                                        % number of scans in run
@@ -1931,6 +1938,15 @@ switch(what)
                 
             end;
         end;  
+    
+    case 'SEARCH_all'
+        vararginoptions(varargin,{'sn','sessN'});
+        if sessN == 1
+        sml1_imana('SEARCH_define','sn',sn,'sessN',sessN);
+        end
+        sml1_imana('SEARCH_dist_runLDC','sn',sn,'sessN',sessN);
+        sml1_imana('SEARCH_dist_map','sn',sn,'sessN',sessN);
+        sml1_imana('SEARCH_dist_surf','sn',sn,'sessN',sessN);
     case 'SEARCH_define'                                                    % STEP 4.1a   :  Defines searchlights for 120 voxels in grey matter surface
         vararginoptions(varargin,{'sn','sessN'});
         
@@ -2056,6 +2072,7 @@ switch(what)
                 fprintf('Done subj %d sess %d hemi %d \n',s,sessN,h);
             end;    % hemi
         end;    % subj
+    
     case 'SEARCH_fingmap_runLDC'                                            % STEP 4.1b   :  Runs LDC searchlight using defined searchlights (above)
 
         glm=2;

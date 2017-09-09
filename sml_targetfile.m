@@ -462,9 +462,9 @@ switch what
     BeforeLearn_G2.isMetronome = zeros(length(Trials),1);
 
     BeforeLearn_G1.lastTrial(1:length(Trials),1) = 0;
-    BeforeLearn_G1.lastTrial([24,48,72,96],:) = 1;      % every 24th trial - last trial in a block
+    BeforeLearn_G1.lastTrial([24,48,72,96,120,144],:) = 1;      % every 24th trial - last trial in a block
     BeforeLearn_G2.lastTrial(1:length(Trials),1) = 0;
-    BeforeLearn_G2.lastTrial([24,48,72,96],:) = 1;
+    BeforeLearn_G2.lastTrial([24,48,72,96,120,144],:) = 1;
 
     BeforeLearn_G1.startTime = zeros(length(Trials),1);
     BeforeLearn_G2.startTime = zeros(length(Trials),1);
