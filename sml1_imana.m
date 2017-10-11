@@ -44,13 +44,13 @@ numruns_task_sess = 8;
 numruns_loc_sess  = 2;
 
 % total - per subject (the total in the end will always be 40)
-numruns           = [40 40 40 20 10];
+numruns           = [40 40 40 40 40 40 20 20];
 numruns_task      = 32;
 numruns_loc       = 8;
 
 sess = [repmat(1,1,10),repmat(2,1,10),repmat(3,1,10),repmat(4,1,10)];   % all sessions
 
-sess_sn = [4,4,4,2,1];    % per subject
+sess_sn = [4,4,4,4,4,4,2,2];    % per subject
 
 run_task   = [1:3 5:7 9:10;
               11:13 15:17 19:20;
@@ -85,12 +85,12 @@ regname         = {'S1','M1','PMd','PMv','SMA','V12','SPLa','SPLp','CaudateN' 'P
 regname_cortex  = {'S1','M1','PMd','PMv','SMA','V12','SPLa','SPLp'};
 regname_BG      = {'CaudateN' 'Pallidum', 'Putamen', 'Thalamus'};
 regname_cerebellum = {'LobIV','LobV','LobVI'};
-numregions_surf = 7;
+numregions_surf = 8;
 numregions_BG   = 4;
 numregions_cerebellum = 3;
 numregions = numregions_surf+numregions_BG+numregions_cerebellum;        
 regSide=[ones(1,8) ones(1,8)*2]; % 1-left, 2-right
-regType=[1:8  1:8]; % cortical areas: 1-7, BG: 8-11, cereb: 12-14
+regType=[1:8  1:8]; % cortical areas: 1-8, BG: 8-12, cereb: 13-15
 
 
 % ------------------------- Subject things --------------------------------
@@ -107,7 +107,7 @@ regType=[1:8  1:8]; % cortical areas: 1-7, BG: 8-11, cereb: 12-14
 %           (note: there values are not [0 0 0] in the MNI coordinate)
 %   Step 3: set those values into loc_AC (subtract from zero)
 
-subj_name  = {'s01','s02','s03','s04','s05'};  
+subj_name  = {'s01','s02','s03','s04','s05','s06','s07','s08'};  
 
 
 % different sessions denoted with {}
@@ -115,90 +115,143 @@ DicomName{1}  = {'2017_07_18_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_07_25_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_07_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_08_S04.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_09_05_S05.MR.DIEDRICHSEN_LONGSEQLEARN'};             
+                 '2017_09_05_S05.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_09_19_S06.MR.Diedrichsen_LongSeqLearn',...
+                 '2017_09_12_S07.MR.DIEDRICHSEN_LONGSEQLEARN'};             
 DicomName{2}  = {'2017_07_25_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_01_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_01_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_08_15_S04.MR.DIEDRICHSEN_LONGSEQLEARN'};
+                 '2017_08_15_S04.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_09_12_S05.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '',...
+                 '2017_09_19_S07.MR.Diedrichsen_LongSeqLearn',...
+                 '2017_10_10_S08.MR.Diedrichsen_LongSeqLearn'};
 DicomName{3}  = {'2017_08_15_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_22_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_23_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_09_06_S04.MR.DIEDRICHSEN_LONGSEQLEARN'};             
+                 '2017_09_06_S04.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_10_03_S05.MR.Diedrichsen_LongSeqLearn',...
+                 '',...
+                 '2017_10_10_S07.MR.Diedrichsen_LongSeqLearn'};             
 DicomName{4}  = {'2017_08_16_S01.MR.DIEDRICHSEN_LONGSEQLEARN',...
                  '2017_08_23_S02.MR.DIEDRICHSEN_LONGSEQLEARN',...
-                 '2017_08_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN'};
+                 '2017_08_25_S03.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_09_12_S04.MR.DIEDRICHSEN_LONGSEQLEARN',...
+                 '2017_10_04_S05.MR.Diedrichsen_LongSeqLearn',...
+                 '',...
+                 '2017_10_11_S07.MR.Diedrichsen_LongSeqLearn'};
 
 
 NiiRawName{1} = {'170718114530DST131221107523418932',...
                  '170725105405DST131221107523418932',...
                  '170725090958DST131221107523418932',...
                  '170808113354DST131221107523418932',...
-                 '170905134655DST131221107523418932'};
+                 '170905134655DST131221107523418932',...
+                 '170919130243DST131221107523418932',...
+                 '170912103955DST131221107523418932'};
 NiiRawName{2} = {'170725124629DST131221107523418932',...
                  '170801131823DST131221107523418932',...
                  '170801113315DST131221107523418932',...
-                 '170815122423DST131221107523418932'};
+                 '170815122423DST131221107523418932',...
+                 '170912143950DST131221107523418932',...
+                 '',...
+                 '170919112438DST131221107523418932'};
 NiiRawName{3}  = {'170815144204DST131221107523418932',...
                   '170822110530DST131221107523418932',...
-                  '170823110924DST131221107523418932'};  
+                  '170823110924DST131221107523418932',...
+                  '170906090741DST131221107523418932',...
+                  '171003133651DST131221107523418932',...
+                  '',...
+                  '171010145029DST131221107523418932'};  
 NiiRawName{4}  = {'170816090254DST131221107523418932',...
                   '170823091559DST131221107523418932',...
-                  '170825085040DST131221107523418932'};
+                  '170825085040DST131221107523418932',...
+                  's04',...
+                  '171004134839DST131221107523418932',...
+                  '',...
+                  '171011103434DST131221107523418932'};
 
 fscanNum{1}   = {[16 18 20 22 24 26 28 30 32 34],...
                  [16 18 20 22 24 26 28 30 32 34],...
                  [17 19 21 23 25 27 29 31 33 35],...
                  [16 18 20 22 24 26 28 30 32 34],...
-                 [19 21 23 25 27 29 31 33 35 37]};             
+                 [19 21 23 25 27 29 31 33 35 37],...
+                 [10 12 14 16 18 20 22 24 26 28],...
+                 [19 21 23 25 27 29 31 33 35 37],...
+                 []};             
 fscanNum{2}   = {[11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 19 21 23 25 27 29],...
                  [11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 15 17 33 35 23 25 27 31]};    % note - blocks 5 and 6 were repeated at the end (subject coughing)
+                 [11 13 15 17 23 27 31 25 33 35],...
+                 [14 16 18 28 22 24 26 34 30 32],...
+                 [],...
+                 [12 14 16 18 20 22 24 26 28 30],...
+                 []};    
 fscanNum{3}   = {[11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 31 17 19 21 23 25 27 29],...  % note - block 3 was repeated at the end (problem with TR)
+                 [11 13 19 17 21 23 27 25 29 31],... 
                  [11 13 15 17 19 21 23 25 27 29],...
-                 [12 14 16 18 20 22 24 26 28 30]};  
+                 [12 14 16 18 20 22 24 26 28 30],...
+                 [15 17 19 21 23 25 27 29 31 33],...
+                 [],...
+                 [13 15 17 19 21 23 27 29 31 35]};  
 fscanNum{4}   = {[11 13 15 17 19 21 23 25 27 29],...
-                 [11 13 15 17 31 21 23 25 27 29],...  % note - block 5 repeated at the end (high error rate)
-                 [11 13 15 17 19 21 23 25 27 29]};    
+                 [11 13 15 17 21 23 27 25 29 31],...  
+                 [11 13 15 17 19 21 23 25 27 29],...
+                 [11 13 15 17 19 21 23 25 29 31],...
+                 [14 16 18 20 22 24 26 28 30 32],...
+                 [],...
+                 [13 15 17 19 21 23 25 27 29 31]};    
 
 fieldNum{1}   = {[35,36],...
                  [35,36],...
                  [36,37],...
                  [35,36],...
-                 [38,39]};
+                 [38,39],...
+                 [29,30],...
+                 [38,39],...
+                 []};
 fieldNum{2}   = {[30,31],...
                  [30,31],...
                  [30,31],...
-                 [36,37]};
+                 [36,37],...
+                 [35,36],...
+                 [],...
+                 [31 32],...
+                 []};
 fieldNum{3}   = {[30,31],...
                  [32,33],...
                  [30,31],...
-                 [31,32]};
+                 [31,32],...
+                 [34 35],...
+                 [],...
+                 [36,37]};
 fieldNum{4}   = {[30,31],...
                  [32,33],...
-                 [30,31]};
+                 [30,31],...
+                 [32,33],...
+                 [33,34],...
+                 [],...
+                 [32 33]};
 
 anatNum    = {[10:14],...
               [10:14],...
               [11:15],...
               [10:14],...
-              [11:15]};  
+              [11:15],...
+              [4:8],...
+              [10:14]};  
           
 loc_AC     = {[-112 -165 -176],...
               [-106 -173 -163],...
               [-107 -178 -163],...
               [-103 -162 -167],...
-              [-105 -163 -163]};
+              [-105 -163 -163],...
+              [-107 -169 -156],...
+              [-105 -163 -162]};
 
 % Other random notes %
 
-% s02 - scan 3: run repeated / replaced
-%       dat files: 181,182,191(!!!),184,185,186,187,188,189,190
-% s02 - scan 4: run repeated / replaced 
-%       dat files: 192,193,194,195,202(!!!),197,198,199,200,201
-% s04 - scan 2: two runs repeated / replaced
-%       dat files: - 69,70,71,72,208 (!!!),209 (!!!),75,76,77,78
+% Dicom system changed with s05 (sessN 3,4), s06 (sessN 1-4) and s07 (sessN 2-4)
 
 
 % ------------------------------ Analysis Cases --------------------------------
@@ -291,7 +344,7 @@ switch(what)
         save(fullfile(physioDir,subj_name{sn},'physioLoc.mat'),'P_loc');
         save(fullfile(physioDir,subj_name{sn},'physioFunc.mat'),'P_func');
 
-    case 'BEH_er_mt'                                                % Analyse and plot ER and MT per subject
+    case 'BEH_scanner_er_mt'                                                % Analyse and plot ER and MT per subject
         vararginoptions(varargin,{'sn'});
         
         sessN = sess_sn(sn);
@@ -299,34 +352,26 @@ switch(what)
         B_fun = [];
         
         for ss = 1:sessN
-            switch (ss)
-                case 1
-                    run_task = [10:12 14:16 18 19];
-                    run_loc = [13 17];
-                case 2
-                    run_task = [69:71 73:75 77:78];
-                    run_loc = [72 76];
-                case 3
-                    run_task = [181:183 185:187 189 190];
-                    run_loc = [184 188];
-                case 4
-                    run_task = [191:193 195:197 199 200];
-                    run_loc = [194 198];
-            end
+
             for s = sn
+
                 D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
-                F = getrow(D,ismember(D.BN,run_task));  % functional runs
-                L = getrow(D,ismember(D.BN,run_loc));   % localiser
+                
+                R = getrow(D,D.ScanSess==ss);
+                F = getrow(R,R.blockType==3 | R.blockType==9);  % functional runs  
+                L = getrow(R,R.blockType==4);   % localiser
                 % calculate / save variables
                 % Loc - MT, ER
                 BL.MT = L.MT;
                 BL.ER = L.isError;
                 BL.ScanSess = L.ScanSess;
+                BL.sn = s*ones(size(L.ScanSess));
                 % Func - MT, ER (for trained and untrained separately)
                 BF.MT = F.MT;
                 BF.ER = F.isError;
                 BF.ScanSess = F.ScanSess;
                 BF.seqType = F.seqType;
+                BF.sn = s*ones(size(F.ScanSess));
                 % Add all var into structures B_loc and B_fun
                 
                 B_loc = addstruct(B_loc,BL);
@@ -338,14 +383,44 @@ switch(what)
         
         figure(1)
         subplot(2,2,1)
-        barplot(B_loc.ScanSess,B_loc.MT,'XTickLabel',lab); ylabel('Mov Time'); title('Localiser'); xlabel('Session');
+        barplot(B_loc.ScanSess,B_loc.MT); ylabel('Mov Time'); title('Localiser'); xlabel('Session');
         subplot(2,2,2)
         barplot(B_fun.ScanSess,B_fun.MT,'split',B_fun.seqType,'leg',{'train','untrain'},'leglocation','northeast'); ylabel('Mov Time'); xlabel('Session'); title('Functional runs');
         subplot(2,2,3)
-        barplot(B_loc.ScanSess,B_loc.ER,'XTickLabel',lab); ylabel('Error rate'); xlabel('Session');
+        barplot(B_loc.ScanSess,B_loc.ER); ylabel('Error rate'); xlabel('Session');
         subplot(2,2,4)
         barplot(B_fun.ScanSess,B_fun.ER,'split',B_fun.seqType,'leg',{'train','untrain'},'leglocation','northeast'); ylabel('Error rate'); xlabel('Session');
         
+        figure;
+        for i=1:5
+            subplot(1,5,i)
+            barplot(B_fun.ScanSess,B_fun.MT,'split',B_fun.seqType,'subset',B_fun.sn==i,'leg',{'train','untrain'})
+        end
+        
+        keyboard;
+    case 'BEH_training'
+        vararginoptions(varargin,{'sn'});
+        
+        AllSubj = [];
+        figure
+        
+        for s = sn
+            
+            D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
+            
+            R = getrow(D,D.blockType==6);
+            
+            runs = 1:length(unique(R.BN));
+            blockNum = kron(runs',ones(24,1)); % 24 trials
+            subplot(1,numel(sn),s)
+            lineplot(blockNum,R.MT,'style_thickline');
+            
+            R.sn = s*ones(size(R.timeTrial));
+            AllSubj = addstruct(AllSubj,R);
+            
+        end
+        
+        keyboard;
 
     case '1_PREP' % ------------ PREP: preprocessing. Expand for more info. ----
         % The PREP cases are preprocessing cases.
@@ -391,7 +466,13 @@ switch(what)
             for i=1:length(seriesNum{s})
                 r     = seriesNum{s}(i);
                 % Get DICOM FILE NAMES
-                DIR   = dir(sprintf('%s.%4.4d.*.IMA',DicomName{sessN}{s},r));   % Get DICOM FILE NAMES
+                if (sn<5 || sn==5 && sessN<3 || sn==7 && sessN<2)
+                    DIR   = dir(sprintf('%s.%4.4d.*.IMA',DicomName{sessN}{s},r));   % Get DICOM FILE NAMES
+                else
+                    folder = fullfile(dicomDir,[subj_name{s},sprintf('_%d',sessN)],[sprintf('%4.4d',r)]);
+                    cd(folder)
+                    DIR   = dir(sprintf('%s.%4.4d.*.dcm',DicomName{sessN}{s},r));   % Get DICOM FILE NAMES
+                end
                 Names = vertcat(DIR.name);
                 % Convert the dicom files with these names.
                 if (~isempty(Names))
@@ -484,11 +565,11 @@ switch(what)
 
         spmj_realign_unwarp_sess(baseDir, subj_name{sn}, subj_runs, numTRs, 'prefix',prefix, 'subfolderRawdata',subfolderRawdata,'subfolderFieldmap',subfolderFieldmap);      
     case 'PREP_plot_movementparameters'                                     % OPTIONAL       :  Investigate movement parameters
-        vararginoptions(varargin,{'sn'});
+        vararginoptions(varargin,{'sn','sessN'});
         X=[];
         %r=[1:numruns(sn)];
-        for r=1:numruns(sn)
-            x = dlmread (fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run_0',num2str(r),'.txt']));
+        for r=1:10 % 10 functional runs
+            x = dlmread (fullfile(baseDir, 'imaging_data',subj_name{sn}, ['rp_' subj_name{sn},'_run' runs{sessN}{r},'.txt']));
             X = [X; x];
         end
        
@@ -669,7 +750,7 @@ switch(what)
         keyboard();
         
         % NOTE:
-        % Overwrites meanepi, unless you update in step one, which saves it
+        % Overwrites meanepi, unless you update in stsml1ep one, which saves it
         % as rmeanepi.
         % Each time you click "update" in coregtool, it saves current
         % alignment by appending the prefix 'r' to the current file
@@ -758,7 +839,7 @@ switch(what)
         sml1_imana('SURF_xhemireg','sn',sn);
         sml1_imana('SURF_map_ico','sn',sn);
         sml1_imana('SURF_make_caret','sn',sn);
-    case 'SURF_freesurfer'                                                  % STEP 2.1   :  Call recon-all in Freesurfer                                                   
+    case 'SURF_freesurfer'                                                  % STEP 2.1   :  Call recon-all in                                                                                                                  Freesurfer                                                   
         vararginoptions(varargin,{'sn'});
         for i=sn
             freesurfer_reconall(freesurferDir,subj_name{i},fullfile(anatomicalDir,subj_name{i},[subj_name{i} '_anatomical.nii']));
@@ -968,7 +1049,7 @@ switch(what)
         T			 = [];
         dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
         % adjusting hrf per subject & session based on extracted timeseries!  
-        delay     = [0.5 1 1 0.5 1];  
+        delay     = [0.5 1 1 0.5 1 0 0];  
 
         announceTime = 0;                                                 % length of task announce time - currently not used
         % Gather appropriate GLM presets.
@@ -1000,19 +1081,24 @@ switch(what)
                 J.timing.fmri_t0 = 1;
                 
                 L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
-                if (sn==2 & sessN==3)
-                    uniqrun = [181,182,191,184,185,186,187,188,189,190];
-                elseif (sn==2 & sessN==4)
-                    uniqrun = [192,193,194,195,202,197,198,199,200,201];
-                elseif (sn==4 & sessN==2)
-                    uniqrun = [69,70,71,72,208,209,75,76,77,78];
-                else
-                    uniqrun = unique(L.BN);
-                end
+                %if (sn==2 & sessN==3)
+                 %   uniqrun = [181,182,191,184,185,186,187,188,189,190];
+                %elseif (sn==2 & sessN==4)
+                 %   uniqrun = [192,193,194,195,202,197,198,199,200,201];
+                %else
+                 %   uniqrun = unique(L.BN);
+                %end
                 % Loop through runs.
                 for r = 1:numruns_task_sess
-                    R = getrow(L,L.BN==uniqrun(run_task(1,r))); % 1-8 func runs of the session
-                    %R = getrow(D,D.BN==run_num{sessN}(run_task(sessN,r)));
+                    if sessN == 4
+                        Rr = getrow(L,L.blockType==9); %blockType==9 - func imaging run without metronome
+                    else
+                        Rr = getrow(L,L.blockType==3); %blockType==3 - funct imaging run with metornome
+                    end
+                    
+                    uniqrun=unique(Rr.BN);
+                    R = getrow(Rr,Rr.BN==uniqrun(r)); % 1-8 func runs of the session
+
                     for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
                         
                         N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
@@ -1161,7 +1247,7 @@ switch(what)
         prefix		 = 'u';
         T			 = [];
         dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
-        delay     = [0.5 1 0 0];                                            % adjusting hrf per subject based on extracted timeseries!
+        delay     = [0.5 1 1 0.5 1 0 0];                                            % adjusting hrf per subject based on extracted timeseries!
         announceTime = 0;                                                   % length of task announce time - currently not used
         % Gather appropriate GLM presets.
         switch glm
@@ -1179,7 +1265,7 @@ switch(what)
                 cvi_type   = 'fast';
         end
         
-        for ss = 1: sessN
+        for ss = sessN
             T=[];
             % Loop through subjects and make SPM files.
             for s = sn
@@ -1194,12 +1280,27 @@ switch(what)
                 J.timing.fmri_t0 = 1;
                 
                 L = getrow(D,D.ScanSess==ss);    % only blocks of that scan session
-                uniqrun = unique(L.BN);
+                
+               % if (sn==2 & ss==3)
+                %    uniqrun = [181,182,191,184,185,186,187,188,189,190];
+                %elseif (sn==2 & ss==4)
+                %    uniqrun = [192,193,194,195,202,197,198,199,200,201];
+                %else
+                %    uniqrun = unique(L.BN);
+                %end
                 
                 % Loop through sessions
                 % Loop through runs.
                 for r = 1:numruns_task_sess       % 8 functional runs
-                    R = getrow(L,L.BN==uniqrun(run_task(1,r)));                 % 1-8 func runs of the session
+                    if sessN == 4
+                        Rr = getrow(L,L.blockType==9); %blockType==9 - func imaging run without metronome
+                    else
+                        Rr = getrow(L,L.blockType==3); %blockType==3 - funct imaging run with metornome
+                    end
+                    
+                    uniqrun=unique(Rr.BN);
+                    R = getrow(Rr,Rr.BN==uniqrun(r)); % 1-8 func runs of the session
+
                     for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
                         
                         N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
@@ -1263,7 +1364,7 @@ switch(what)
         % Estimate the GLM from the appropriate SPM.mat file. 
         % Make GLM files with case 'GLM_make'.
         vararginoptions(varargin,{'sn','sessN'});
-        for ss = 1:sessN
+        for ss = sessN
         for s = sn
             % Load files
             load(fullfile(glmFoSExDir{ss},subj_name{s},'SPM.mat'));
@@ -1285,7 +1386,7 @@ switch(what)
         vararginoptions(varargin,{'sn','sessN'});
         cwd = pwd;
         % Loop through subjects.
-        for ss = 1:sessN
+        for ss = sessN
         for s = sn
             glmSubjDir = [glmFoSExDir{ss} filesep subj_name{s}];
             cd(glmSubjDir);
@@ -1507,6 +1608,12 @@ switch(what)
     
     case '3e_GLM_LOC_sess'  % ------- construct GLM for localizer runs per session! ------- %
         % important for assessing consistencies of patterns etc.
+    case 'GLM_LOC_sess_all'
+        glm=2;
+        vararginoptions(varargin,{'sn','glm','sessN'});
+        sml1_imana('GLM_make_LOC_sess','sn',sn,'glm',glm,'sessN',sessN);
+        sml1_imana('GLM_estimate_LOC_sess','sn',sn,'sessN',sessN);
+        sml1_imana('GLM_contrast_LOC_sess','sn',sn,'sessN',sessN);
     case 'GLM_make_LOC_sess'
         % localizer runs - per session
         % makes the GLM file for each subject, and a corresponding 
@@ -1520,8 +1627,8 @@ switch(what)
         prefix		 = 'u';
         T			 = [];
         dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
-        delay        = [0.5 1 0 0];     
-        announceTime = 1.0;                                                 % length of task announce time - currently not used
+        delay        = [0.5 1 1 0.5 1];     
+        announceTime = 0;                                                   % length of task announce time - currently not used
         % Gather appropriate GLM presets.
         switch glm
             case 1  % wls
@@ -1540,61 +1647,71 @@ switch(what)
 
         % Loop through subjects and make SPM files.
         for s = sn
-            D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));     
-             
+            D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
+          for ss = 1:sessN   
+            T = [];
             % Do some subject structure fields.
-            dircheck(fullfile(glmLocSessDir{sessN}, subj_name{s}));
-            J.dir 			 = {fullfile(glmLocSessDir{sessN}, subj_name{s})};
+            dircheck(fullfile(glmLocSessDir{ss}, subj_name{s}));
+            J.dir 			 = {fullfile(glmLocSessDir{ss}, subj_name{s})};
             J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
             J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
             J.timing.fmri_t  = 16;
             J.timing.fmri_t0 = 1;
             
-                L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
-                uniqrun = unique(L.BN);
-                % Loop through runs.
-                for r = 1:numruns_loc_sess       % 2 localizer runs per session
+            L = getrow(D,D.ScanSess==ss);    % only blocks of that scan session
+            %if (sn==2 & ss==3)
+             %   uniqrun = [181,182,191,184,185,186,187,188,189,190];
+            %elseif (sn==2 & ss==4)
+             %   uniqrun = [192,193,194,195,202,197,198,199,200,201];
+            %else
+             %   uniqrun = unique(L.BN);
+            %end
+            % Loop through runs.
+            for r = 1:numruns_loc_sess       % 2 localizer runs per session
+                Rr = getrow(L,L.blockType==4); %blockType==4 - funct imaging localizer
+                
+                uniqrun=unique(Rr.BN);
+                R = getrow(Rr,Rr.BN==uniqrun(r)); % 1-2 localizer runs
+                
+                for i = 1:(numTRs(run_loc(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
                     
-                    for i = 1:(numTRs(run_loc(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
-                        
-                        N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
-                            [prefix subj_name{s},'_run',runs{sessN}{run_loc(1,r)},'.nii,',num2str(i)])];
-                        
-                    end;
-                    J.sess(r).scans = N;                                        % number of scans in run
-                    % Loop through conditions.
+                    N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
+                        [prefix subj_name{s},'_run',runs{ss}{run_loc(1,r)},'.nii,',num2str(i)])];
                     
-                    for c = 1:numel(num_fing)   % 5
-                        R = getrow(L,L.BN==uniqrun(run_loc(1,r)));
-                        idx						   = find(R.seqNumb==num_fing(c));    % find indx for fingers 1-5 (overall 13-17)
-                        condName = sprintf('SeqNumb-%d',R.seqNumb(idx(1)));
-                        J.sess(r).cond(c).name 	   = condName;
-                        % Correct start time for numDummys removed & convert to seconds
-                        J.sess(r).cond(c).onset    = [R.startTimeReal(idx)/1000 - J.timing.RT*numDummys + announceTime + delay(sn)];
-                        J.sess(r).cond(c).duration = dur;                       % durations of task we are modeling (not length of entire trial)
-                        
-                        J.sess(r).cond(c).tmod     = 0;
-                        J.sess(r).cond(c).orth     = 0;
-                        J.sess(r).cond(c).pmod     = struct('name', {}, 'param', {}, 'poly', {});
-                        
-                        % Do some subject info for fields in SPM_info.mat.
-                        S.SN    		= s;
-                        S.run           = r;
-                        S.runAll        = (sessN-1)*2 + r;  % 1-8 overall loc runs
-                        S.seqNumb 		= R.seqNumb(idx(1))-12;     % 1-5
-                        S.seqType    	= R.seqType(idx(1));
-                        S.isMetronome   = R.isMetronome(idx(1));
-                        S.ScanSess      = R.ScanSess(idx(1));
-                        T				= addstruct(T,S);
-                    end;
+                end;
+                J.sess(r).scans = N;                                        % number of scans in run
+                % Loop through conditions.
+                
+                for c = 1:numel(num_fing)   % 5
+                    idx						   = find(R.seqNumb==num_fing(c));    % find indx for fingers 1-5 (overall 13-17)
+                    condName = sprintf('SeqNumb-%d',R.seqNumb(idx(1)));
+                    J.sess(r).cond(c).name 	   = condName;
+                    % Correct start time for numDummys removed & convert to seconds
+                    J.sess(r).cond(c).onset    = [R.startTimeReal(idx)/1000 - J.timing.RT*numDummys + announceTime + delay(sn)];
+                    J.sess(r).cond(c).duration = dur;                       % durations of task we are modeling (not length of entire trial)
                     
-                    % Add any additional regressors here.
-                    J.sess(r).multi 	= {''};
-                    J.sess(r).regress 	= struct('name', {}, 'val', {});
-                    J.sess(r).multi_reg = {''};
-                    % Define high pass filter cutoff (in seconds): see glm cases.
-                    J.sess(r).hpf 		= hrf_cutoff;
-                end;    % runs
+                    J.sess(r).cond(c).tmod     = 0;
+                    J.sess(r).cond(c).orth     = 0;
+                    J.sess(r).cond(c).pmod     = struct('name', {}, 'param', {}, 'poly', {});
+                    
+                    % Do some subject info for fields in SPM_info.mat.
+                    S.SN    		= s;
+                    S.run           = r;
+                    S.runAll        = (ss-1)*2 + r;  % 1-8 overall loc runs
+                    S.seqNumb 		= R.seqNumb(idx(1))-12;     % 1-5
+                    S.seqType    	= R.seqType(idx(1));
+                    S.isMetronome   = R.isMetronome(idx(1));
+                    S.ScanSess      = R.ScanSess(idx(1));
+                    T				= addstruct(T,S);
+                end;
+                
+                % Add any additional regressors here.
+                J.sess(r).multi 	= {''};
+                J.sess(r).regress 	= struct('name', {}, 'val', {});
+                J.sess(r).multi_reg = {''};
+                % Define high pass filter cutoff (in seconds): see glm cases.
+                J.sess(r).hpf 		= hrf_cutoff;
+            end;    % runs
             
             J.fact 			   = struct('name', {}, 'levels', {});
             J.bases.hrf.derivs = [0 0];
@@ -1611,20 +1728,21 @@ switch(what)
             % This file contains user-friendly information about the glm
             % model, regressor types, condition names, etc.
             save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
-            
-        end;    
+        end; % sessN
+        end; % subject    
     case 'GLM_estimate_LOC_sess'
         % Estimate the GLM from the appropriate SPM.mat file. 
         % Make GLM files with case 'GLM_make'.
-        sessN=1;
         vararginoptions(varargin,{'sn','sessN'});
         for s = sn
             % Load files
-            load(fullfile(glmLocSessDir{sessN},subj_name{s},'SPM.mat'));
-            SPM.swd = fullfile(glmLocSessDir{sessN},subj_name{s});
-            % Run the GLM.
-            spm_rwls_spm(SPM);
-        end;
+            for ss = 1:sessN
+                load(fullfile(glmLocSessDir{ss},subj_name{s},'SPM.mat'));
+                SPM.swd = fullfile(glmLocSessDir{ss},subj_name{s});
+                % Run the GLM.
+                spm_rwls_spm(SPM);
+            end; % session
+        end; % subject
         % for checking -returns img of head movements and corrected sd vals
         % spm_rwls_resstats(SPM)   
     case 'GLM_contrast_LOC_sess'
@@ -1632,36 +1750,36 @@ switch(what)
         % 1:   Finger average vs. rest
         % 2-6: Single finger mapping (1-5)
  
-        sessN=1;
         vararginoptions(varargin,{'sn','sessN'});
         cwd = pwd;
         % Loop through subjects.
         for s = sn
-            glmSubjDir = [glmLocSessDir{sessN} filesep subj_name{s}];
-            cd(glmSubjDir);
-
-            load SPM;
-            SPM = rmfield(SPM,'xCon');
-            T   = load('SPM_info.mat');
-
-            %_____t contrast for single finger mapping (average) vs. rest
-            con                = zeros(1,size(SPM.xX.X,2));
-            con(:,T.seqNumb>0)= 1;
-            con                = con/sum(con);
-            SPM.xCon(1)        = spm_FcUtil('Set',sprintf('DigitAny'), 'T', 'c',con',SPM.xX.xKXs);
-         
-            %_____t contrast for single finger mapping vs. rest
-            for d = 1:5
+            for ss = 1:sessN
+                glmSubjDir = [glmLocSessDir{ss} filesep subj_name{s}];
+                cd(glmSubjDir);
+                
+                load SPM;
+                SPM = rmfield(SPM,'xCon');
+                T   = load('SPM_info.mat');
+                
+                %_____t contrast for single finger mapping (average) vs. rest
                 con                = zeros(1,size(SPM.xX.X,2));
-                con(:,T.seqNumb==d)  = 1;
+                con(:,T.seqNumb>0)= 1;
                 con                = con/sum(con);
-                SPM.xCon(d+1)      = spm_FcUtil('Set',sprintf('Digit%d',d), 'T', 'c',con',SPM.xX.xKXs);
-            end;
-            
-            %____do the constrasts
-            SPM = spm_contrasts(SPM,[1:length(SPM.xCon)]);
-            save('SPM.mat','SPM');
-            
+                SPM.xCon(1)        = spm_FcUtil('Set',sprintf('DigitAny'), 'T', 'c',con',SPM.xX.xKXs);
+                
+                %_____t contrast for single finger mapping vs. rest
+                for d = 1:5
+                    con                = zeros(1,size(SPM.xX.X,2));
+                    con(:,T.seqNumb==d)  = 1;
+                    con                = con/sum(con);
+                    SPM.xCon(d+1)      = spm_FcUtil('Set',sprintf('Digit%d',d), 'T', 'c',con',SPM.xX.xKXs);
+                end;
+                
+                %____do the constrasts
+                SPM = spm_contrasts(SPM,[1:length(SPM.xCon)]);
+                save('SPM.mat','SPM');
+                
                 % rename contrast images and spmT images
                 conName = {'con','spmT'};
                 for i=1:length(SPM.xCon),
@@ -1671,7 +1789,9 @@ switch(what)
                         movefile(oldName{i},newName{i});
                     end
                 end
-        end;
+                clear SPM;
+            end; 
+        end; % subject
         cd(cwd);
         
     case 'PSC_create'
@@ -1951,7 +2071,7 @@ switch(what)
         vararginoptions(varargin,{'sn','sessN'});
         
         for s=sn
-            mask       = fullfile(glmSessDir{sessN},subj_name{s},'mask.nii');
+            mask       = fullfile(regDir,sprintf('mask_%s.nii',subj_name{s}));
             Vmask      = spm_vol(mask);
             Vmask.data = spm_read_vols(Vmask);
             
@@ -2643,7 +2763,7 @@ switch(what)
         
         sessN = 1;
         sn  = 1;    
-        roi = [1:14];
+        roi = [1:16];
         vararginoptions(varargin,{'sn','sessN','roi'});
         
         T=[];
@@ -2674,12 +2794,12 @@ switch(what)
             end
         end
         % save T
-        save(fullfile(regDir,sprintf('reg_betas_sess%d.mat',sessN)),'-struct','T'); 
+        save(fullfile(regDir,sprintf('betas_sess%d.mat',sessN)),'-struct','T'); 
         fprintf('\n');    
     case 'ROI_getBetas_FoSEx'
         sessN = 1;
         sn  = 1;    
-        roi = [1:14];
+        roi = [1:16];
         vararginoptions(varargin,{'sn','sessN','roi'});
         
         T=[];
@@ -2709,13 +2829,13 @@ switch(what)
             end
         end
         % save T
-        save(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',sessN)),'-struct','T'); 
+        save(fullfile(regDir,sprintf('betas_FoSEx_sess%d.mat',sessN)),'-struct','T'); 
         fprintf('\n');    
     case 'ROI_getBetas_LOC'
         % for localizer  
         sessN = 1;
         sn  = 1;    
-        roi = [1:14];
+        roi = [1:16];
         vararginoptions(varargin,{'sn','sessN','roi'});
         
         T=[];
@@ -2746,16 +2866,16 @@ switch(what)
             end
         end
         % save T
-        save(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',sessN)),'-struct','T'); 
+        save(fullfile(regDir,sprintf('betas_LOC_sess%d.mat',sessN)),'-struct','T'); 
         fprintf('\n');  
     case 'ROI_stats'                                                        % STEP 5.8   :  Calculate stats/distances on activity patterns - train/untrain seq
         sessN = 1;
-        sn  = 1;
-        roi = [1:14];
+        sn  = [1:5];
+        roi = [1:16];
         betaChoice = 'multi'; % uni, multi or raw
         vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
         
-        T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',sessN))); % loads region data (T)
+        T = load(fullfile(regDir,sprintf('betas_sess%d.mat',sessN))); % loads region data (T)
         
         % output structures
         Ts = [];
@@ -2764,7 +2884,7 @@ switch(what)
         % do stats
         for s = sn % for each subject
             D = load(fullfile(glmSessDir{sessN}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
-            fprintf('\nSubject: %d\n',s)
+            fprintf('\nSubject: %d session: %d\n',s,sessN)
             num_run = numruns_task_sess;
             
             for r = roi % for each region
@@ -2808,16 +2928,16 @@ switch(what)
         end; % each subject
 
         % % save
-        save(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',sessN)),'-struct','To');
+        save(fullfile(regDir,sprintf('stats_%sPW_sess%d.mat',betaChoice,sessN)),'-struct','To');
         fprintf('\nDone.\n')    
     case 'ROI_stats_LOC'
         sessN = 1;
-        sn  = 1;
-        roi = [1:14];
+        sn  = [1:5];
+        roi = [1:16];
         betaChoice = 'multi';
         vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
         
-        T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',sessN))); % loads region data (T)
+        T = load(fullfile(regDir,sprintf('betas_LOC_sess%d.mat',sessN))); % loads region data (T)
         
         % output structures
         Ts = [];
@@ -2826,7 +2946,7 @@ switch(what)
         % do stats
         for s = sn % for each subject
             D = load(fullfile(glmLocSessDir{sessN}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
-            fprintf('\nSubject: %d session: \n',s, sessN)
+            fprintf('\nSubject: %d session: %d\n',s, sessN)
             num_run = numruns_loc_sess;
             
             for r = roi % for each region
@@ -2864,16 +2984,16 @@ switch(what)
         end; % each subject
 
         % % save
-        save(fullfile(regDir,sprintf('sess%d_LOC_reg_statsAllSeq.mat',sessN)),'-struct','To');
+        save(fullfile(regDir,sprintf('stats_LOC_%sPW_sess%d.mat',betaChoice,sessN)),'-struct','To');
         fprintf('\nDone.\n')  
     case 'ROI_stats_FoSEx'
         sessN = 1;
-        sn  = [1:2];
-        roi = [1:14];
+        sn  = [1:5];
+        roi = [1:16];
         betaChoice = 'multi'; % uni, multi or raw
         vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
         
-        T = load(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',sessN))); % loads region data (T)
+        T = load(fullfile(regDir,sprintf('betas_FoSEx_sess%d.mat',sessN))); % loads region data (T)
         
         % output structures
         Ts = [];
@@ -2882,7 +3002,7 @@ switch(what)
         % do stats
         for s = sn % for each subject
             D = load(fullfile(glmFoSExDir{sessN}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
-            fprintf('\nSubject: %d\n',s)
+            fprintf('\nSubject: %d session: %d\n',s, sessN)
             num_run = numruns_task_sess;
             
             for r = roi % for each region
@@ -2931,7 +3051,7 @@ switch(what)
         end; % each subject
 
         % % save
-        save(fullfile(regDir,sprintf('sess%d_FoSEx_reg_statsAllSeq.mat',sessN)),'-struct','To');
+        save(fullfile(regDir,sprintf('stats_FoSEx_%sPW_sess%d.mat',betaChoice,sessN)),'-struct','To');
         fprintf('\nDone.\n')  
         
     case 'ROI_beta_consist_witSess'                                           % OPTIONAL   :  Calculates pattern consistencies for each subject in roi across glms.
@@ -2960,7 +3080,7 @@ switch(what)
         Rreturn=[];
         %========%
         for s=sessN
-            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',s))); % loads in struct 'T'
+            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',s))); % loads in struct 'T'
             for r=roi
                 Rall=[]; %prep output variable
                 for s=sn
@@ -3011,7 +3131,7 @@ switch(what)
         PS=[];  % across all digits
         for sessN = 1:4; % per session
             C=[];P=[];
-            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',sessN))); % loads region data (T)
+            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',sessN))); % loads region data (T)
         
             switch (betaChoice)
             case 'uni'
@@ -3125,7 +3245,7 @@ switch(what)
         PS=[];  % across all digits
         for sessN = 1:4; % per session
             C=[];P=[];
-            T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',sessN))); % loads region data (T)
+            T = load(fullfile(regDir,sprintf('betas_LOC_sess%d.mat',sessN))); % loads region data (T)
         
             switch (betaChoice)
             case 'uni'
@@ -3201,7 +3321,9 @@ switch(what)
         title('Z scores')
         legend(b,regname(reg));
         xlabel('All across-session combinations');
-        ylabel('Correlation / RSA consistency(line)')
+        ylabel('Correlation / RSA consistency(line)');
+        
+        keyboard;
     case 'ROI_beta_consist_witSess_LOC'
         % pattern consistency for specified roi
         % Pattern consistency is a measure of the proportion of explained
@@ -3223,7 +3345,7 @@ switch(what)
         Rreturn=[];
         %========%
         for s=sessN
-            T = load(fullfile(regDir,sprintf('reg_LOC_betas_sess%d.mat',s))); % loads in struct 'T'
+            T = load(fullfile(regDir,sprintf('betas_LOC_sess%d.mat',s))); % loads in struct 'T'
             for r=roi
                 Rall=[]; %prep output variable
                 for s=sn
@@ -3251,22 +3373,417 @@ switch(what)
         varargout = {Rreturn};
         fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
         % output arranged such that each row is an roi, each col is subj
+    case 'pattern_cosist'
+         % evaluate consistency of measures (psc, beta, z-scores) across
+        % sessions for finger mapping
         
+        sn  = 1;
+        reg = 1:8;
+        betaChoice = 'uni'; % options: uni / multi / raw
+        
+        vararginoptions(varargin,{'sn','reg','betaChoice'});
+        
+        for  roi = reg;
+            CS=[];  % separate per digit
+            PS=[];  % across all digits
+            for s = 1:numel(sn)
+                for sessN = 1:4; % per session
+                    C=[];P=[];
+                    T = load(fullfile(regDir,sprintf('betas_sess%d.mat',sessN))); % loads region data (T)
+                    
+                    switch (betaChoice)
+                        case 'uni'
+                            beta = T.betaUW{T.SN==s&T.region==roi};
+                        case 'multi'
+                            beta = T.betaW{T.SN==s&T.region==roi};
+                        case 'raw'
+                            beta = T.betaRAW{T.SN==s&T.region==roi};
+                    end
+                    
+                    
+                    runs=1:numruns_task_sess;
+                    conditionVec = kron(ones(numel(runs),1),[1:12]');
+                    
+                    split_run=1:4;  
+                    splitRunVec = kron(ones(numel(split_run),1),[ones(12,1); ones(12,1).*2]); % split even and odd runs
+                    
+                    %C.beta=beta{roi};
+                    for d = 1:12 %all sequences
+                        C.beta_seq(d,:)=mean(beta(conditionVec==idx(d),:),1);  % beta values for each digit (avrg across blocks)
+                    end
+                    
+                    %C.zscore_seq = bsxfun(@rdivide,C.beta_seq,sqrt(T.resMS{roi}));
+                    
+                    C.seq_ind=[1:6]';
+                    C.sessN=ones(6,1)*sessN;
+                    C.roi=ones(6,1)*roi;
+                    
+                    P.beta_mean=mean(C.beta_seq,1);   % mean pattern acros digit in each session
+                    P.zscore_mean=mean(C.zscore_seq,1);
+                    %P.zscore_mean=bsxfun(@rdivide,P.beta_mean,sqrt(T.resMS{roi}));
+                    P.sessN=sessN;
+                    P.roi=roi;
+                    
+                    CS=addstruct(CS,C);
+                    PS=addstruct(PS,P);
+                end
+                
+                ind = indicatorMatrix('allpairs',([1:4]));  % betwSess indicator
+                for n=1:numel(unique(CS.seq_ind))
+                    T = getrow(CS,CS.seq_ind==n);
+                    for i=1:size(ind,1)
+                        [i1 i2] = find(ind(i,:)~=0);
+                        if rm == 1
+                            AcrSess_b(i)=corr(T.beta_seq(i1(2),:)',T.beta_seq(i2(2),:)');
+                            AcrSess_z(i)=corr(T.zscore_seq(i1(2),:)',T.zscore_seq(i2(2),:)');
+                            AcrSess_p(i)=corr(T.psc_seq(i1(2),:)',T.psc_seq(i2(2),:)');
+                        elseif rm == 0
+                            AcrSess_b(i)=corrN(T.beta_seq(i1(2),:)',T.beta_seq(i2(2),:)');
+                            AcrSess_z(i)=corrN(T.zscore_seq(i1(2),:)',T.zscore_seq(i2(2),:)');
+                            AcrSess_z(i)=corrN(T.psc_seq(i1(2),:)',T.psc_seq(i2(2),:)');
+                        end
+                    end
+                    AcrSess_beta(n)=mean(AcrSess_b);
+                    AcrSess_zscore(n)=mean(AcrSess_z);
+                    AcrSess_psc(n)=mean(AcrSess_p);
+                end
+            end
+            Consist.beta_corr(roi,:) = AcrSess_beta;
+            Consist.zscore_corr(roi,:) = AcrSess_zscore;
+            Consist.psc_corr(roi,:) = AcrSess_psc;
+            Consist.beta_RSA(roi,1) = rsa_patternConsistency(CS.beta_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
+            Consist.zscore_RSA(roi,1) = rsa_patternConsistency(CS.zscore_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
+            Consist.psc_RSA(roi,1) = rsa_patternConsistency(CS.psc_seq,CS.sessN,CS.seq_ind,'removeMean',rm);
+            Consist.roi(roi,1) = roi;
+            
+        end
+       
+        
+        keyboard;  
+    case 'pattern_reliability'
+        % Splits data for each session into two partitions (even and odd runs).
+        % Calculates correlation coefficients between each condition pair 
+        % between all partitions.
+        % Default setup includes subtraction of each partition's mean
+        % activity pattern (across conditions).
+        % Conducts ttest comparing correlations within-conditions (within
+        % subject) to those between-conditions (across subject). If stable,
+        % within-condition corrs should be significantly larger than those
+        % between.
+        % Finally, plots within-condition correlations. Shaded region
+        % reflects stderr across subjects.
+        reg = [1:8]; 
+        sn  = [1:5];
+        figsess = 0;
+        sessN = [1:4];
+        subtract_mean = 1; % subtract
+        partitions = [1:2:numruns_task_sess; 2:2:numruns_task_sess];
+        numRuns    = 1:numruns_task_sess;
+        numConds   = num_seq;
+        conds   = repmat([numConds],1,length(numRuns));
+        runNums = kron([numRuns],ones(1,length(numConds)));
+        % Correlate patterns across even-odd run splits within subjects.
+
+        vararginoptions(varargin,{'roi','figsess','sn','subtract_mean','sessN'});
+        
+        C=[];
+        for ss = sessN
+            D   = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss)));
+            splitcorrs = [];
+            for roi = reg;
+                T   = getrow(D,D.region==reg(roi));
+
+                sindx      = 0;
+                
+                for s = sn % for each subject
+                    t = getrow(T,T.SN==s);
+                    sindx = sindx + 1; %per subject
+                    
+                    prepBetas = [];
+                    tbetaUW{1} = [];
+                    
+                    if subtract_mean
+                        for r=numRuns
+                            tbetaUW{1}(runNums==r,:) = bsxfun(@minus,t.betaUW{1}(runNums==r,:),mean(t.betaUW{1}(runNums==r,:)));
+                        end
+                    else
+                        tbetaUW{1}=t.betaUW{1};
+                    end
+                    % prep betas (harvest and subtract partition mean)
+                    for i = 1:size(partitions,1)
+                        partitionIdx = logical(ismember(runNums,partitions(i,:)))';
+                        condIdx{i}   = conds(partitionIdx);
+                         prepBetas{i} = tbetaUW{1}(partitionIdx,:);
+                    end
+                    
+                    % correlate patterns across partitions, both within and across
+                    % conditions
+                    for c1 = numConds % for each condition
+                        % condition mean activity pattern for this run partition
+                        oddCon   = condIdx{1}==c1;
+                        oddBetas = mean(prepBetas{1}(oddCon,:));
+                        % condition mean activity pattern for the other run partition
+                        evenCon   = condIdx{2}==c1;
+                        evenBetas = mean(prepBetas{2}(evenCon,:));
+                        % correlate condition patterns across partitions
+                        tmp = corrcoef(evenBetas,oddBetas);
+                        splitcorrs{roi}(sindx,c1) = tmp(1,2);
+                    end
+                    
+                    Corr.sn = s;
+                    Corr.reg = roi;
+                    Corr.witSess = splitcorrs{roi}(s,:);
+                    Corr.sessN = ss;
+                    
+                    C = addstruct(C,Corr);
+                    
+                end
+                
+                trained_corr{roi} = splitcorrs{roi}(:,[1:6]);
+                untrained_corr{roi} = splitcorrs{roi}(:,[7:12]);
+                % ttest within reliability for trained and untrained
+                [h,p]=ttest2(trained_corr{roi}(:),untrained_corr{roi}(:));
+               % fprintf('The average correlation for trained sequences is %d. \n',mean(mean(trained_corr{roi})));
+               % fprintf('The average correlation for untrained sequences is %d. \n',mean(mean(untrained_corr{roi})));
+               % fprintf('T-test for train vs untrain for session %d and region %s is %d with %d probability. \n \n',ss,regname{roi},h,p);
+                
+                % plot within-condition correlations (error across subjects)
+                if figsess == 1
+                    figure('Color',[1 1 1]);
+                    traceplot(numConds,splitcorrs{roi},'errorfcn','stderr');
+                    ylabel('correlation (corrcoef) of partition avg. patterns');
+                    xlabel('sequence number');
+                    ylim([0 1]);
+                    xlim([0.5 max(numConds)+0.5]);
+                end
+            end
+        end
+        
+        C.train = mean(C.witSess(:,[1:6]),2);
+        C.untrain = mean(C.witSess(:,[7:12]),2);
+        
+        figure
+        barplot(C.sessN, [C.train C.untrain],'leg',{'train','untrain'});
+        
+        figure
+        for i=1:numel(sn)
+            subplot(1,numel(sn),i)
+             barplot(C.sessN, [C.train C.untrain],'leg',{'train','untrain'},'subset',C.sn==i);
+        end
+        
+        figure
+        for i=1:numel(reg)
+            subplot(2,4,i)
+            barplot(C.sessN,[C.train C.untrain],'leg',{'train','untrain'},'subset',C.reg==i);
+            title(sprintf('%s',regname{i}));
+            if i==1 | i==5
+                ylabel('Correlation');
+            else
+                ylabel('');
+            end
+        end
+        
+        keyboard;
+    case 'pattern_reliability_acrossSess'
+        
+        reg = [1:8]; 
+        sn  = [1:5];
+        fig = 1;
+        sessN = 1;
+        sess_combination = 'sequential'; % of 'altogether'
+        subtract_mean = 1; % subtract
+        partitions = [1:2:numruns_task_sess; 2:2:numruns_task_sess];
+        numRuns    = 1:numruns_task_sess;
+        numConds   = num_seq;
+        conds   = repmat([numConds],1,length(numRuns));
+        runNums = kron([numRuns],ones(1,length(numConds)));
+        % Correlate patterns across even-odd run splits within subjects.
+
+        vararginoptions(varargin,{'roi','fig','sn','subtract_mean','sessN','sess_combination'});
+        
+        switch(sess_combination)
+            case 'altogether'
+                ss_comb = [1 1 1 2 2 3; 2 3 4 3 4 4];
+            case 'sequential'
+                ss_comb = [1 2 3; 2 3 4];
+        end
+        C = [];
+        for ss = 1:size(ss_comb,2)
+
+            D1   = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss_comb(1,ss))));
+            D2   = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss_comb(2,ss))));
+            
+            for roi = reg;
+                T1   = getrow(D1,D1.region==reg(roi));
+                T2   = getrow(D2,D2.region==reg(roi));
+                sindx      = 0;
+                
+                for s = sn % for each subject
+                    t1 = getrow(T1,T1.SN==s);
+                    t2 = getrow(T2,T2.SN==s);
+                    sindx = sindx + 1; %per subject
+                    
+                    prepBetas1 = [];
+                    prepBetas2 = [];
+                    t1betaUW{1}=[];
+                    t2betaUW{1}=[];
+                    
+                    if subtract_mean
+                        for r=numRuns
+                            t1betaUW{1}(runNums==r,:) = bsxfun(@minus,t1.betaUW{1}(runNums==r,:),mean(t1.betaUW{1}(runNums==r,:)));
+                            t2betaUW{1}(runNums==r,:) = bsxfun(@minus,t2.betaUW{1}(runNums==r,:),mean(t2.betaUW{1}(runNums==r,:)));
+                        end
+                        %    prepBetas1{i} = bsxfun(@minus,t1.betaUW{1}(partitionIdx,:),mean(t1.betaUW{1}(partitionIdx,:)));
+                        %    prepBetas2{i} = bsxfun(@minus,t2.betaUW{1}(partitionIdx,:),mean(t2.betaUW{1}(partitionIdx,:)));
+                    else
+                        t1betaUW{1}=t1.betaUW{1};
+                        t2betaUW{1}=t2.betaUW{1};
+                        %    prepBetas1{i} = t1.betaUW{1}(partitionIdx,:);
+                        %   prepBetas2{i} = t2.betaUW{1}(partitionIdx,:);
+                    end
+                    
+                    % prep betas (harvest and subtract partition mean)
+                    for i = 1:size(partitions,1)
+                        partitionIdx = logical(ismember(runNums,partitions(i,:)))';
+                        condIdx{i}   = conds(partitionIdx);
+
+                        
+                        prepBetas1{i} = t1betaUW{1}(partitionIdx,:);
+                        prepBetas2{i} = t2betaUW{1}(partitionIdx,:);
+                      
+                    end
+                    
+                    oddBetas1=[]; oddBetas2=[]; evenBetas1=[]; evenBetas2=[];
+                    % correlate patterns within / across sessions
+                    for c1 = numConds % for each condition
+                        % condition mean activity pattern for this run partition
+                        oddCon   = condIdx{1}==c1;
+                        oddBetas1(c1,:) = mean(prepBetas1{1}(oddCon,:));
+                        oddBetas2(c1,:) = mean(prepBetas2{1}(oddCon,:));
+                        % condition mean activity pattern for the other run partition
+                        evenCon   = condIdx{2}==c1;
+                        evenBetas1(c1,:) = mean(prepBetas1{2}(evenCon,:));
+                        evenBetas2(c1,:) = mean(prepBetas2{2}(evenCon,:));
+                        
+                    end
+                    
+%                     if subtract_mean
+%                             oddBetas1 = bsxfun(@minus,oddBetas1,mean(oddBetas1));
+%                             oddBetas2 = bsxfun(@minus,oddBetas2,mean(oddBetas2));
+%                             evenBetas1 = bsxfun(@minus,evenBetas1,mean(evenBetas1));
+%                             evenBetas2 = bsxfun(@minus,evenBetas2,mean(evenBetas2));
+%                     end
+                    
+                    for c1 = numConds
+                        % correlate condition patterns within both sessions
+                        % their geometric product is the ceiling for
+                        % patterns across sessions
+                        tmpW1 = corrcoef(evenBetas1(c1,:),oddBetas1(c1,:));
+                        tmpW2 = corrcoef(evenBetas2(c1,:),oddBetas2(c1,:));
+                        ceilingWitSess(c1) = ssqrt(tmpW1(1,2)*tmpW2(1,2));
+
+                        % correlate condition patterns across sessions
+                        tmpAc1 = corrcoef(evenBetas1(c1,:),oddBetas2(c1,:));
+                        tmpAc2 = corrcoef(oddBetas1(c1,:),evenBetas2(c1,:));
+                        tmpAc3 = corrcoef(oddBetas1(c1,:),oddBetas2(c1,:));
+                        tmpAc4 = corrcoef(evenBetas1(c1,:),evenBetas2(c1,:));
+                        corrAcrSess(c1) = mean([tmpAc1(1,2),tmpAc2(1,2),tmpAc3(1,2),tmpAc4(1,2)]);
+                    end
+                    
+                    Corr.sn = s;
+                    Corr.reg = roi;
+                    Corr.witSess = ceilingWitSess;
+                    Corr.acrSess = corrAcrSess;
+                    if sess_combination == 'sequential' 
+                        Corr.sess_comb = ss;
+                    end
+                    C = addstruct(C,Corr);
+                end
+ 
+            end
+        end; % ss_comb
+        
+        C.trainWit = mean(C.witSess(:,[1:6]),2);
+        C.untrainWit = mean(C.witSess(:,[7:12]),2);
+        C.trainAcr = mean(C.acrSess(:,[1:6]),2);
+        C.untrainAcr = mean(C.acrSess(:,[7:12]),2);
+        
+        figure;
+        if sess_combination == 'altogether'
+            barplot(C.reg,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'});
+        else
+            for i = 1:size(ss_comb,2)
+                subplot(1,size(ss_comb,2),i)
+                barplot(C.reg,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'},'subset',C.sess_comb==i);
+            end
+            figure;
+            barplot(C.sess_comb,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'});
+            
+        end
+        
+        figure
+        for i=1:numel(reg)
+            subplot(2,4,i)
+            barplot(C.sess_comb,[C.trainAcr C.untrainAcr],'leg',{'train','untrain'},'subset',C.reg==i & C.sn==4);
+            title(sprintf('%s',regname{i}));
+            if i==1 | i==5
+                ylabel('Correlation');
+            else
+                ylabel('');
+            end
+        end
+        
+            keyboard;   
+    case 'simulate_reliability'
+        
+        D1   = load(fullfile(regDir,sprintf('betas_sess%d.mat',1)));
+        
+        T1   = getrow(D1,D1.region==1);
+        t1 = getrow(T1,T1.SN==1);
+        prepBetas = [];
+        noiseLevel = 0.3;   % 10%
+        % prep true pattern
+        
+        X = bsxfun(@minus,t1.betaUW{1}(1:12,:),mean(t1.betaUW{1}(1:12,:)));
+        
+        err = mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
+        
+        evenBetas1 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
+        oddBetas1 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
+        evenBetas2 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
+        oddBetas2 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
+        
+        
+        % within session
+        tmpW1 = corrcoef(evenBetas1,oddBetas1);
+        tmpW2 = corrcoef(evenBetas2,oddBetas2);
+        ceilingWitSess = ssqrt(tmpW1(1,2)*tmpW2(1,2));
+        
+        % correlate condition patterns across sessions
+        tmpAc1 = corrcoef(evenBetas1,oddBetas2);
+        tmpAc2 = corrcoef(oddBetas1,evenBetas2);
+        tmpAc3 = corrcoef(oddBetas1,oddBetas2);
+        tmpAc4 = corrcoef(evenBetas1,evenBetas2);
+        corrAcrSess = mean([tmpAc1(1,2),tmpAc2(1,2),tmpAc3(1,2),tmpAc4(1,2)]);
+        
+        keyboard;
     case 'ROI_dimensionality'
         % estimating the dimensionality of patterns 
         % cumulative sum of eig of G
         sn=1;
         reg=3;
-        vararginoptions(varargin,{'sn','reg'});
-        for s = 1:4;    % all sessions
-            To = load(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',s)));
+        sessN=4;
+        betaChoice = 'multiPW';
+        vararginoptions(varargin,{'sn','reg','sessN','betaChoice'});
+        for s = 1:sessN;    % sessions
+            To = load(fullfile(regDir,sprintf('stats_%s_sess%d.mat',betaChoice,s)));
             T = getrow(To,To.region==reg & To.SN==sn);
             eigTrain = T.eigTrain(1:5);
             eigUntrain = T.eigUntrain(1:5);
             eigTrain_sum = cumsum(eigTrain);
             eigUntrain_sum = cumsum(eigUntrain);
             
-            figure(1)
+            figure(2)
             subplot(2,4,s)
             title(sprintf('Session %d',s));
             hold on;
@@ -3281,9 +3798,10 @@ switch(what)
         % cumulative sum of eig of G
         sn=1;
         reg=2;
-        vararginoptions(varargin,{'sn','reg'});
+        betaChoice='multiPW';
+        vararginoptions(varargin,{'sn','reg','betaChoice'});
         for s = 1:4;    % all sessions
-            To = load(fullfile(regDir,sprintf('sess%d_LOC_reg_statsAllSeq.mat',s)));
+            To = load(fullfile(regDir,sprintf('stats_LOC_%s_sess%d.mat',betaChoice,s)));
             T = getrow(To,To.region==reg & To.SN==sn);
             eig_fing = T.eig;
             eigfing_sum = cumsum(eig_fing);
@@ -3296,24 +3814,24 @@ switch(what)
         end
     case 'ROI_act_dist'
         
-        sn = [1:2];
-        roi = [1:5];
+        sn = [1:5];
+        roi = [1:8];
         sessN = 1:4;
         seq = 'trained';
-        betaChoice = 'multi';
-        fig = 1;
+        betaChoice = 'multiPW';
+        fig = 0;
         vararginoptions(varargin,{'sn','roi','seq','sessN','betaChoice','fig'});
 
         Stats = [];
         
         for ss = sessN % do per session number
-            D = load(fullfile(regDir,sprintf('sess%d_reg_statsAllSeq.mat',ss))); % loads region data (D)
-            T = load(fullfile(regDir,sprintf('reg_betas_sess%d.mat',ss))); % loads region data (T)
+            D = load(fullfile(regDir,sprintf('stats_%s_sess%d.mat',betaChoice,ss))); % loads region data (D)
+            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss))); % loads region data (T)
             
             switch (betaChoice)
-                case 'uni'
+                case 'uniPW'
                     beta = T.betaUW;
-                case 'multi'
+                case 'multiPW'
                     beta = T.betaW;
                 case 'raw'
                     beta = T.betaRAW;
@@ -3369,29 +3887,77 @@ switch(what)
                 end
             end
         end
+        Stats.sessIndx = [ones(120,1); ones(40,1)*2];
+        
+        a = [Stats.sessIndx; Stats.sessIndx];
+        b = [Stats.sessN; Stats.sessN];
+        
+        keyboard;
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([a b],[Stats.dist_untrain;Stats.dist_train],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
+            ylim([0 0.07])
+            if f==1
+                ylabel('Distances')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+        
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([Stats.sessIndx Stats.sessN],Stats.dist_cross,'style_thickline','subset',Stats.roi==f);
+            ylim([0 0.07])
+            if f==1
+                ylabel('Distance between sequence sets')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+        
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([a b],[Stats.beta_untrain;Stats.beta_train],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
+            ylim([0 0.07])
+            if f==1
+                ylabel('Betas')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+        
+        keyboard;
+       
         figure;
-        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        subplot(1,3,1)
+        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
         drawline(0,'dir','horz');
         title('Distance trained');
         
-        figure;
-        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        subplot(1,3,2)
+        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
         drawline(0,'dir','horz');
         title('Distance untrained');
         
-        figure;
-        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        subplot(1,3,3)
+        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
         drawline(0,'dir','horz');
         title('Distance cross-seq');
         
-        
         figure;
-        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        subplot(1,2,1)
+        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
         drawline(0,'dir','horz');
         title('Betas trained');
         
-        figure;
-        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','leg',regname(1:5)); hold on;
+        subplot(1,2,2)
+        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
         drawline(0,'dir','horz');
         title('Betas untrained');
         
@@ -3399,19 +3965,20 @@ switch(what)
         keyboard;      
     case 'ROI_act_dist_FoSEx'
         
-        sn = 1;
-        roi = 3;
+        sn = [1:5];
+        roi = [1:8];
         sessN = 1:4;
         seq = 'trained';
-        betaChoice = 'multi';
-        fig = 1;
+        betaChoice = 'multiPW';
+        subjfig = 0;
+        regfig = 0;
         vararginoptions(varargin,{'sn','roi','seq','sessN','betaChoice','fig'});
 
         Stats = [];
         
         for ss = sessN % do per session number
-            D = load(fullfile(regDir,sprintf('sess%d_FoSEx_reg_statsAllSeq.mat',ss))); % loads region data (D)
-            T = load(fullfile(regDir,sprintf('reg_FoSEx_betas_sess%d.mat',ss))); % loads region data (T)
+            D = load(fullfile(regDir,sprintf('stats_FoSEx_%s_sess%d.mat',betaChoice,ss))); % loads region data (D)
+            T = load(fullfile(regDir,sprintf('betas_FoSEx_sess%d.mat',ss))); % loads region data (T)
             
             runs=1:numruns_task_sess;
             conditionVec = kron(ones(numel(runs),1),[1:12]');
@@ -3421,18 +3988,18 @@ switch(what)
             indx_untrain = 7:12;
 
             
-            for s=1:numel(sn)
-                SI = load(fullfile(glmFoSExDir{ss}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
+            for s=1:length(sn)
+                SI = load(fullfile(glmFoSExDir{ss}, subj_name{sn(s)}, 'SPM_info.mat'));   % load subject's trial structure
                 for r=roi
                     for exe=1:2;    % FoSEx
                        D_exe = getrow(D,D.FoSEx==exe); 
                         switch (betaChoice)
-                            case 'uni'
-                                beta = T.betaUW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
-                            case 'multi'
-                                beta = T.betaW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
+                            case 'uniPW'
+                                beta = T.betaUW{T.SN==sn(s) & T.region==r}(SI.FoSEx==exe,:);
+                            case 'multiPW'
+                                beta = T.betaW{T.SN==sn(s) & T.region==r}(SI.FoSEx==exe,:);
                             case 'raw'
-                                beta = T.betaRAW{T.SN==s & T.region==r}(SI.FoSEx==exe,:);
+                                beta = T.betaRAW{T.SN==sn(s) & T.region==r}(SI.FoSEx==exe,:);
                         end
                         
                         clear C;
@@ -3449,7 +4016,7 @@ switch(what)
                         SeqUntrainAll = SeqUntrain(SeqUntrain~=0);
                         SeqCrossAll = SeqCross(SeqCross~=0);
                         
-                        switch (fig)
+                        switch (subjfig)
                             case 1
                                 figure(r)
                                 subplot(2,max(sessN),(exe-1)*max(sessN)+ss)
@@ -3458,7 +4025,7 @@ switch(what)
                                 drawline(6.5,'dir','horz');
                                 colorbar; caxis([-0.02 0.04]);
                                 if ss == 4; set(gcf,'PaperPosition',[2 2 20 8],'Color',[1 1 1]); wysiwyg; end;
-                                title(sprintf('Subject %d session %d region %s exe %d',s,ss,regname{r},exe));
+                                title(sprintf('Subject %d session %d region %s exe %d',sn(s),ss,regname{r},exe));
                         end
                         
                         S.sn=s;
@@ -3470,54 +4037,200 @@ switch(what)
                         S.beta_untrain=mean(mean(C.beta_seq_untrain));
                         S.sessN=ss;
                         S.FoSEx=exe;
+                        if S.sessN<4
+                            S.speed=1;
+                        else
+                            S.speed=2;
+                        end
                         Stats=addstruct(Stats,S);
                     end; % FoSEx
                 end; % roi
             end; % sn
         end
-        figure
-        subplot(3,1,1)
-        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained dist');
-        subplot(3,1,2)
-        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained dist');
-        subplot(3,1,3)
-        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('cross dist');
         
-        figure
-        subplot(2,1,1)
-        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained betas');
-        subplot(2,1,2)
-        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained betas');
-
+        switch(regfig)
+            case 1
+                figure
+                subplot(3,1,1)
+                lineplot([Stats.speed Stats.sessN],Stats.dist_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained dist');
+                subplot(3,1,2)
+                lineplot([Stats.speed Stats.sessN],Stats.dist_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained dist');
+                subplot(3,1,3)
+                lineplot([Stats.speed Stats.sessN],Stats.dist_cross,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('cross dist');
+                
+                figure
+                subplot(2,1,1)
+                lineplot([Stats.speed Stats.sessN],Stats.beta_train,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('trained betas');
+                subplot(2,1,2)
+                lineplot([Stats.speed Stats.sessN],Stats.beta_untrain,'split',Stats.FoSEx,'style_thickline','leg',{'1st','2nd'}); title('untrained betas');
+        end
        % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]
        
        col_sess = {'r','b','g','k'};
        mark_seq = {'o','*'};
+       
+       for r=1:numel(roi)
+           figure
+           title(sprintf('Beta values in %s', regname{r})); xlabel('2nd execution'); ylabel('1st execution');
+           gc1 = gca; hold on;
+           
+        %   figure
+         %  title(sprintf('Distance in %s',regname{r})); xlabel('2nd execution'); ylabel('1st execution');
+          % gc2 = gca; hold on;
+           for ss=1:length(sessN)
+               for seq=1:2   % trained / untrained
+                   if seq == 1
+                       dist = Stats.dist_train;
+                       beta = Stats.beta_train;
+                   elseif seq == 2
+                       dist = Stats.dist_untrain;
+                       beta = Stats.beta_untrain;
+                   end
+                   
+                   plot(gc1,S(Stats.FoSEx==2 & Stats.sessN==ss & Stats.roi==roi(r)),beta(Stats.FoSEx==1 & Stats.sessN==ss & Stats.roi==roi(r)),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
+                   hold on; plot([0:0.01:0.07],[0:0.01:0.07],'--');
+                  % plot(gc2,dist(Stats.FoSEx==2 & Stats.sessN==ss & Stats.roi==roi(r)),dist(Stats.FoSEx==1 & Stats.sessN==ss & Stats.roi==roi(r)),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
+               end
+           end; % session
+
+           legend(gc1,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
+           %legend(gc2,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
+       end; % for each roi
+       
+       keyboard;
        figure
-       title(sprintf('Beta values in %s', regname{r})); xlabel('2nd execution'); ylabel('1st execution');
-       gc1 = gca; hold on;
+       for f = 1:numel(roi)
+           subplot(1,numel(roi),f);
+           lineplot([Stats.speed Stats.sessN],Stats.dist_train,'split',Stats.FoSEx,'subset',Stats.roi==f,'style_thickline','leg',{'1st','2nd'});
+           ylim([0 0.07])
+           if f==1
+               ylabel('Distances trained')
+           else
+               ylabel('')
+           end
+           title(sprintf('%s',regname{f}))
+       end
+      
+       figure
+       for f = 1:numel(roi)
+           subplot(1,numel(roi),f);
+           lineplot([Stats.speed Stats.sessN],Stats.dist_untrain,'split',Stats.FoSEx,'subset',Stats.roi==f,'style_thickline','leg',{'1st','2nd'});
+           ylim([0 0.07])
+           if f==1
+               ylabel('Distances untrained')
+           else
+               ylabel('')
+           end
+           title(sprintf('%s',regname{f}))
+       end
        
        figure
-       title(sprintf('Distance in %s',regname{r})); xlabel('2nd execution'); ylabel('1st execution');
-       gc2 = gca; hold on;
-        for ss=1:length(sessN)
-            for seq=1:2   % trained / untrained
-                if seq == 1
-                    dist = Stats.dist_train;
-                    beta = Stats.beta_train;
-                elseif seq == 2
-                    dist = Stats.dist_untrain;
-                    beta = Stats.beta_untrain;
+       for f = 1:numel(roi)
+           subplot(1,numel(roi),f);
+           lineplot([Stats.speed Stats.sessN],Stats.dist_cross,'split',Stats.FoSEx,'subset',Stats.roi==f,'style_thickline','leg',{'1st','2nd'});
+           ylim([0 0.07])
+           if f==1
+               ylabel('Distance between seq sets')
+           else
+               ylabel('')
+           end
+           title(sprintf('%s',regname{f}))
+       end
+       
+       figure
+       for f = 1:numel(roi)
+           subplot(1,numel(roi),f);
+           lineplot([Stats.speed Stats.sessN],Stats.beta_train,'split',Stats.FoSEx,'subset',Stats.roi==f,'style_thickline','leg',{'1st','2nd'});
+           ylim([0 0.07])
+           if f==1
+               ylabel('Betas trained')
+           else
+               ylabel('')
+           end
+           title(sprintf('%s',regname{f}))
+       end
+       
+       figure
+       for f = 1:numel(roi)
+           subplot(1,numel(roi),f);
+           lineplot([Stats.speed Stats.sessN],Stats.beta_untrain,'split',Stats.FoSEx,'subset',Stats.roi==f,'style_thickline','leg',{'1st','2nd'});
+           ylim([0 0.07])
+           if f==1
+               ylabel('Betas untrained')
+           else
+               ylabel('')
+           end
+           title(sprintf('%s',regname{f}))
+       end
+       
+       keyboard;
+    
+    case 'SURF_dist'
+        % number of vertices above a certain threshold
+        vararginoptions(varargin,{'sn'});
+        thres = 0.001;
+        T=[];
+        for s=sn;
+            for ss = 1:sess_sn(s)
+                for hem = 1:2
+                    
+                    caretSubjDir = fullfile(caretDir,sprintf('x%s',subj_name{s}),hemName{hem});
+                    cd(caretSubjDir);
+                    surf=caret_load(sprintf('%s_sess%d_dist.metric',subj_name{s},ss));
+                    C = caret_load(fullfile(caretDir,'fsaverage_sym',hemName{h},['ROI.paint']));
+                    dist_train=surf.data(:,2);
+                    dist_untrain=surf.data(:,3);
+                    A.hem(1:2,:)=hem;
+                    A.sn(1:2,:)=s;
+                    A.sessN(1:2,:)=ss;
+                    A.vert(1,:)=sum(dist_train>thres);
+                    A.vert(2,:)=sum(dist_untrain>thres);
+                    A.dist_pattern(1,:)=dist_train';
+                    A.dist_pattern(2,:)=dist_untrain';
+                    A.seqType=[1,2]';
+                    T=addstruct(T,A);
                 end
-                
-                plot(gc1,beta(Stats.FoSEx==2 & Stats.sessN==ss),beta(Stats.FoSEx==1 & Stats.sessN==ss),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
-                plot(gc2,dist(Stats.FoSEx==2 & Stats.sessN==ss),dist(Stats.FoSEx==1 & Stats.sessN==ss),mark_seq{seq},'Color',col_sess{ss},'linewidth',2); hold on; axis equal; hold on; grid on;
             end
-        end;    % for each roi
-
-        legend(gc1,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
-        legend(gc2,'Sess1-train','Sess1-untrain','Sess2-train','Sess2-untrain','Sess3-train','Sess3-untrain','Sess4-train','Sess4-untrain','Location','SouthEast');
-        keyboard;  
+            
+            B_train=getrow(T,T.sn==s & T.hem==1 & T.seqType==1);
+            B_untrain=getrow(T,T.sn==s & T.hem==1 & T.seqType==2);
+            for ss1=1:4
+                for ss2=1:4
+                    Corr_train(ss1,ss2)=corr(B_train.dist_pattern(ss1,:)',B_train.dist_pattern(ss2,:)','rows','pairwise');
+                    Corr_untrain(ss1,ss2)=corr(B_untrain.dist_pattern(ss1,:)',B_untrain.dist_pattern(ss2,:)','rows','pairwise');
+                end
+            end
+            Corr.all((s-1)*6+1,:)=Corr_train(1,2); % sess1-2
+            Corr.all((s-1)*6+2,:)=Corr_train(2,3); % sess2-3
+            Corr.all((s-1)*6+3,:)=Corr_train(3,4); % sess3-4
+            Corr.all((s-1)*6+4,:)=Corr_untrain(1,2);
+            Corr.all((s-1)*6+5,:)=Corr_untrain(2,3);
+            Corr.all((s-1)*6+6,:)=Corr_untrain(3,4);
+            Corr.sess([(s-1)*6+1,(s-1)*6+4],:)=1;
+            Corr.sess([(s-1)*6+2,(s-1)*6+5],:)=2;
+            Corr.sess([(s-1)*6+3,(s-1)*6+6],:)=3;
+            Corr.indx((s-1)*6+1:(s-1)*6+3,:)=1; %train
+            Corr.indx((s-1)*6+4:(s-1)*6+6,:)=2; %untrain
+            Corr.sn((s-1)*6+1:(s-1)*6+6,:)=s; %sn
+        end
+        keyboard;
+        figure;
+        lineplot(T.sessN,T.vert,'split',T.seqType,'subset',T.hem==1,'style_thickline','leg',{'train','untrain'});
+        title('All subjects')
+        
+        figure;
+        for s=1:numel(sn)
+            subplot(1,numel(sn),s)
+            lineplot(T.sessN,T.vert,'split',T.seqType,'subset',T.hem==1 & T.sn==s,'style_thickline','leg',{'train','untrain'});
+            title(sprintf('subject %d',s));
+        end
+        
+        figure;
+        for s=1:numel(sn)
+            subplot(1,numel(sn),s)
+            barplot(Corr.sess,Corr.all,'split',Corr.indx,'subset',Corr.sn==s,'leg',{'train','untrain'});
+            title(sprintf('subject %d',s));
+        end
         
     case 'PLOT_FingDist'
         sessN=1;    % per session

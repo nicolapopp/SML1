@@ -3,7 +3,7 @@ function varargout=sml_analyze (what, varargin)
 prefix = 'sml1_';
 baseDir = '/Users/eberlot/Documents/Data/SuperMotorLearning';
 behDir  = fullfile(baseDir,'behavioral_data');
-subj_name  = {'s01','s02','s03'};
+subj_name  = {'s01','s02','s03','s04','s05'};
 cd(behDir)
 
 switch what
