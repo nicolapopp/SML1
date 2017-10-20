@@ -22,6 +22,8 @@ glmLocDir       ={[baseDir '/glmLoc/glmL1'],[baseDir '/glmLoc/glmL2'],[baseDir '
 glmLocSessDir   ={[baseDir '/glmLocSess/glmLocSess1'],[baseDir '/glmLocSess/glmLocSess2'],[baseDir '/glmLocSess/glmLocSess3'],[baseDir '/glmLocSess/glmLocSess4']}; % one glm for loc run per session
 glmSessDir      ={[baseDir '/glmSess/glmSess1'],[baseDir '/glmSess/glmSess2'],[baseDir '/glmSess/glmSess3'],[baseDir '/glmSess/glmSess4']}; % one glm per session
 glmFoSExDir     ={[baseDir '/glmFoSEx/glmFoSEx1'],[baseDir '/glmFoSEx/glmFoSEx2'],[baseDir '/glmFoSEx/glmFoSEx3'],[baseDir '/glmFoSEx/glmFoSEx4']};    
+glmSeqType      ={[baseDir '/glmSeqType']};
+
 
 % ------------------------- Experiment Info -------------------------------
 numDummys  = 4;        % per run
@@ -44,13 +46,13 @@ numruns_task_sess = 8;
 numruns_loc_sess  = 2;
 
 % total - per subject (the total in the end will always be 40)
-numruns           = [40 40 40 40 40 40 20 20];
+numruns           = [40 40 40 40 40 20 40 20];
 numruns_task      = 32;
 numruns_loc       = 8;
 
 sess = [repmat(1,1,10),repmat(2,1,10),repmat(3,1,10),repmat(4,1,10)];   % all sessions
 
-sess_sn = [4,4,4,4,4,4,2,2];    % per subject
+sess_sn = [4,4,4,4,4,2,4,2];    % per subject
 
 run_task   = [1:3 5:7 9:10;
               11:13 15:17 19:20;
@@ -92,6 +94,11 @@ numregions = numregions_surf+numregions_BG+numregions_cerebellum;
 regSide=[ones(1,8) ones(1,8)*2]; % 1-left, 2-right
 regType=[1:8  1:8]; % cortical areas: 1-8, BG: 8-12, cereb: 13-15
 
+
+% ------------------------- Freesurfer things -----------------------------         
+atlasA    = 'x';                                                            % freesurfer filename prefix
+atlasname = 'fsaverage_sym';                                                % freesurfer average atlas
+hemName   = {'LeftHem','RightHem'};                                         % freesurfer hemisphere folder names    
 
 % ------------------------- Subject things --------------------------------
 % The variables in this section must be updated for every new subject.
@@ -1226,6 +1233,127 @@ switch(what)
             end; % sn
 
         cd(cwd);
+    
+    case '3c_GLM_SEQ_TYPE'
+    % just trained vs. untrained   
+    case 'GLM_make_seqtype'
+    % makes the GLM file for each subject, and a corresponding 
+        % SPM_info.mat file. The latter file contains nice summary
+        % information of the model regressors, condition names, etc.
+        
+        glm = 2;    %1/2/3
+        vararginoptions(varargin,{'sn','glm','sessN'});
+        % Set some constants.
+        prefix		 = 'u';
+        T			 = [];
+        dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
+        % adjusting hrf per subject & session based on extracted timeseries!  
+        delay     = [0.5 1 1 0.5 1 0 0];  
+
+        announceTime = 0;                                                 % length of task announce time - currently not used
+        % Gather appropriate GLM presets.
+        switch glm
+            case 1  % wls
+                hrf_params = [5.5 12.5]; 
+                hrf_cutoff = 128;
+                cvi_type   = 'wls';
+            case 2  % fast + hpf
+                hrf_params = [5.5 12.5];
+                hrf_cutoff = 128;
+                cvi_type   = 'fast';
+            case 3  % fast, no hpf
+                hrf_params = [5.5 12.5];
+                hrf_cutoff = inf;
+                cvi_type   = 'fast';
+        end
+
+        % Loop through subjects / all sessions and make SPM files.
+            for s = sn
+                D = dload(fullfile(behavDir,['sml1_',subj_name{s},'.dat']));
+                
+                % Do some subject structure fields.
+                dircheck(fullfile(glmSessDir{sessN}, subj_name{s}));
+                J.dir 			 = {fullfile(glmSessDir{sessN}, subj_name{s})};
+                J.timing.units   = 'secs';                                      % timing unit that all timing in model will be
+                J.timing.RT 	 = 1.0;                                         % TR (in seconds, as per 'J.timing.units')
+                J.timing.fmri_t  = 16;
+                J.timing.fmri_t0 = 1;
+                
+                L = getrow(D,D.ScanSess==sessN);    % only blocks of that scan session
+                %if (sn==2 & sessN==3)
+                 %   uniqrun = [181,182,191,184,185,186,187,188,189,190];
+                %elseif (sn==2 & sessN==4)
+                 %   uniqrun = [192,193,194,195,202,197,198,199,200,201];
+                %else
+                 %   uniqrun = unique(L.BN);
+                %end
+                % Loop through runs.
+                for r = 1:numruns_task_sess
+                    if sessN == 4
+                        Rr = getrow(L,L.blockType==9); %blockType==9 - func imaging run without metronome
+                    else
+                        Rr = getrow(L,L.blockType==3); %blockType==3 - funct imaging run with metornome
+                    end
+                    
+                    uniqrun=unique(Rr.BN);
+                    R = getrow(Rr,Rr.BN==uniqrun(r)); % 1-8 func runs of the session
+
+                    for i = 1:(numTRs(run_task(r))-numDummys)                   % get nifti filenames, correcting for dummy scancs
+                        
+                        N{i} = [fullfile(baseDir, 'imaging_data',subj_name{s}, ...
+                            [prefix subj_name{s},'_run',runs{sessN}{run_task(1,r)},'.nii,',num2str(i)])];
+                        
+                    end;
+                    J.sess(r).scans = N;                                        % number of scans in run
+                    % Loop through conditions.
+                    
+                    for c = 1:numel(num_seq)
+                        idx						   = find(R.seqNumb==c);             % find indx of all trials in run - 1:6 trained; 7-12 untrained
+                        condName = sprintf('SeqNumb-%d',R.seqNumb(idx(1)));
+                        J.sess(r).cond(c).name 	   = condName;
+                        % Correct start time for numDummys removed & convert to seconds
+                        J.sess(r).cond(c).onset    = [R.startTimeReal(idx)/1000 - J.timing.RT*numDummys + announceTime + delay(sn)];
+                        J.sess(r).cond(c).duration = dur;                       % durations of task we are modeling (not length of entire trial)
+                        
+                        J.sess(r).cond(c).tmod     = 0;
+                        J.sess(r).cond(c).orth     = 0;
+                        J.sess(r).cond(c).pmod     = struct('name', {}, 'param', {}, 'poly', {});
+                        
+                        % Do some subject info for fields in SPM_info.mat.
+                        S.SN    		= s;
+                        S.run   		= r;    % 1-8: functional runs
+                        S.runAll        = (sessN-1)*8 + r;  % 1-32
+                        S.seqNumb 		= R.seqNumb(idx(1));
+                        S.seqType    	= R.seqType(idx(1));
+                        S.isMetronome   = R.isMetronome(idx(1));
+                        S.ScanSess      = R.ScanSess(idx(1));
+                        T				= addstruct(T,S);
+                    end;
+                    
+                    % Add any additional regressors here.
+                    J.sess(r).multi 	= {''};
+                    J.sess(r).regress 	= struct('name', {}, 'val', {});
+                    J.sess(r).multi_reg = {''};
+                    % Define high pass filter cutoff (in seconds): see glm cases.
+                    J.sess(r).hpf 		= hrf_cutoff;
+                end;
+                J.fact 			   = struct('name', {}, 'levels', {});
+                J.bases.hrf.derivs = [0 0];
+                J.bases.hrf.params = hrf_params;    % make it subject specific
+                J.volt 			   = 1;
+                J.global 		   = 'None';
+                J.mask 	           = {fullfile(baseDir, 'imaging_data',subj_name{s}, 'rmask_noskull.nii,1')};
+                J.mthresh 		   = 0.05;
+                J.cvi_mask 		   = {fullfile(baseDir, 'imaging_data',subj_name{s},'rmask_gray.nii')};
+                J.cvi 			   = cvi_type;
+                % Save the GLM file for this subject.
+                spm_rwls_run_fmri_spec(J);
+                % Save the aux. information file (SPM_info.mat).
+                % This file contains user-friendly information about the glm
+                % model, regressor types, condition names, etc.
+                save(fullfile(J.dir{1},'SPM_info.mat'),'-struct','T');
+                
+            end;    % sn
         
     case '3c_GLM_FoSEx' % ------- GLM with separate regressors for first / second execution --
         % fits regressors separately for FoSEx
@@ -1627,7 +1755,7 @@ switch(what)
         prefix		 = 'u';
         T			 = [];
         dur			 = 2.5;                                                 % secs (length of task dur, not trial dur)
-        delay        = [0.5 1 1 0.5 1];     
+        delay        = [0.5 1 1 0.5 1 0 0];     
         announceTime = 0;                                                   % length of task announce time - currently not used
         % Gather appropriate GLM presets.
         switch glm
@@ -2012,53 +2140,132 @@ switch(what)
                 
             end;
         end;
-    case 'CONT_surface'
-     % create surface maps of contrast maps
-     % trained and untrained sequences
-     
-        smooth = 0;   
-        vararginoptions(varargin,{'sn','sessN','smooth'});
+    case 'PSC_group_make'
+        % Calculate group metric files from contrast / psc calculations. 
+        % Takes 2 contrast results ('TrainSeq','UntrainSeq') across
+        % subjects and makes a group level metric file that contains each
+        % subject's data for that contrast type.
+        sessN=1;
+        sn=[1:5,7];
+        vararginoptions(varargin,{'sessN','sn'});
+        % Some presets
+        name    = 'Contrasts';
 
-        hemisphere=1:length(hem);
-        fileList = [];
-        column_name = [];
-        name={'Seq1','Seq2','Seq3','Seq4','Seq5','Seq6','Seq7','Seq8','Seq9','Seq10','Seq11','Seq12','TrainSeq','UntrainSeq'};
-        for n = 1:length(name)
-            fileList{n}=fullfile(['psc_sess' num2str(sessN) '_' name{n} '.nii']);
-            column_name{n} = fullfile(sprintf('Sess%d_%s.nii',sessN,name{n}));
-        end
-        for s=sn
-            for h=hemisphere
-                caretSDir = fullfile(caretDir,['x',subj_name{s}],hemName{h});
-                specname=fullfile(caretSDir,['x',subj_name{s} '.' hem{h}   '.spec']);
-                white=fullfile(caretSDir,[hem{h} '.WHITE.coord']);
-                pial=fullfile(caretSDir,[hem{h} '.PIAL.coord']);
-                
-                C1=caret_load(white);
-                C2=caret_load(pial);
-                
-                for f=1:length(fileList)
-                    images{f}=fullfile(glmSessDir{sessN},subj_name{s},fileList{f});
+        OUTname    = {'TrainSeq','UntrainSeq'};
+        inputcol   = [13 14]; % only averages - all trained / untrained
+        replaceNaN = [1 1];
+        
+        % Loop over hemispheres.
+        for h = 1:2
+            % Go to the directory where the group surface atlas resides
+            surfaceGroupDir = [caretDir filesep atlasname filesep hemName{h}];
+            cd(surfaceGroupDir);
+            % Loop over each input metric file in 'INname' and make a group metric file
+            for j = 1:length(OUTname);
+                % Loop over subjects...
+                for i = 1:length(sn);
+                    % ...and define the names of their metric files
+                    infilenames{j}{i} = fullfile(caretDir,[atlasA subj_name{sn(i)}], hemName{h}, sprintf('%s_%s_sess%d.metric',subj_name{sn(i)},name,sessN));
+                    % Name the output filename for this group metric file in average surface folder
                 end;
-                metric_out = fullfile(caretSDir,sprintf('%s_Contrasts_sess%d.metric',subj_name{s},sessN));
-                M=caret_vol2surf_own(C1.data,C2.data,images,'ignore_zeros',1);
-                M.column_name = column_name;
-                caret_save(metric_out,M);
-                fprintf('Subj %d, Hem %d\n',s,h);
-                
-                if smooth == 1;
-                    % Smooth output .metric file (optional)
-                    % Load .topo file
-                    closed = fullfile(caretSDir,[hem{h} '.CLOSED.topo']);
-                    Out = caret_smooth(metric_out, 'coord', white, 'topo', closed);%,...
-                    %'algorithm','FWHM','fwhm',12);
-                    char(Out);  % if smoothed adds an 's'
-                else
-                end;
-                
+                outfilenames{j} = [surfaceGroupDir filesep hem{h} '.' OUTname{j} '_sess' num2str(sessN) '.metric'];
+                % Finally, make the group metric file for this metric type/contrast
+                caret_metricpermute(infilenames{j},'outfilenames',outfilenames(j),'inputcol',inputcol(j),'replaceNaNs',replaceNaN(j));
+                % Verbose display to user
+                fprintf('hem: %i  image: %i \n', h,j);
             end;
-        end;  
-    
+        end;    
+    case 'PSC_group_cSPM'
+        % Calculate group stats files from the group metric files. 
+        % Takes 4 contrast results ('dist','dist_trained','dist_untrained','dist_cross')  and 
+        % calculates group level stats (one sample t test that the mean 
+        % effect is bigger than zero). 
+        % 
+        % Although we calculate the t-score, corresponding p-value for that
+        % t-score, and finally the z-score 
+        % subject's data for that contrast type.
+        
+        sessN=1;
+        sn=[1:5,7];
+        s=1:length(sn);
+        vararginoptions(varargin,{'sessN','sn'});
+        
+        SPMname={'TrainSeq','UntrainSeq'};
+        
+        sqrtTransform=[1,1,1,1]; % Should you take ssqrt before submitting? 
+                                % Yes, b/c used rsa.distanceLDC to
+                                % calculate distances. This function
+                                % returns squared cv mahalanobis distance.
+        SummaryName = sprintf('.summary_psc_sess%d.metric',sessN);
+        hemi = [1 2];
+        
+        for h=hemi
+            surfaceGroupDir=[caretDir filesep 'fsaverage_sym'  filesep hemName{h}];
+            %----get the full directory name of the metric files and the NONsmoothed metric files that we create below
+            for i=1:length(SPMname);
+                %sfilenames{i}=[surfaceGroupDir filesep 's' hem{h} '.' SPMname{i} '.metric']; % smoothed
+                sfilenames{i}=[surfaceGroupDir filesep hem{h} '.' SPMname{i} '_sess' num2str(sessN) '.metric']; % no smoothing
+            end;
+            %----loop over the metric files and calculate the cSPM of each with the non-smoothed metrics
+            for i=1:length(SPMname);
+                Data=caret_load(sfilenames{i});
+                if sqrtTransform(i)
+                    Data.data=ssqrt(Data.data);
+                end;
+                cSPM=caret_getcSPM('onesample_t','data',Data.data(:,s),'maskthreshold',0.5); % set maskthreshold to 0.5 = calculate stats at location if 50% of subjects have data at this point
+                caret_savecSPM([surfaceGroupDir filesep hem{h} '.' SPMname{i} '_stats.metric'],cSPM);
+                save([surfaceGroupDir  filesep   'cSPM_' SPMname{i} '.mat'],'cSPM');
+                data(:,i)=cSPM.con(1).con; % mean
+                data(:,i+length(SPMname))=cSPM.con(1).Z; % T
+                column_name{i}=['mean_' SPMname{i} '_sess' num2str(sessN)];
+                column_name{i+length(SPMname)}=['T_' SPMname{i} '_sess' num2str(sessN)];
+            end;
+            C = caret_struct('metric','data',data,'column_name',column_name);
+            caret_save([surfaceGroupDir  filesep hem{h} SummaryName],C);
+        end;
+        fprintf('Done \n')
+    case 'PSC_crossflat'
+        sessN=1;
+        vararginoptions(varargin,{'sessN'});
+        
+        LimDist = [-0.5 3.5];
+        coord_start = [-30 0]; 
+        coord_end = [40 0];
+        
+        for h=1
+            surfGroupDir=[caretDir filesep 'fsaverage_sym'  filesep hemName{h} ];
+            flatFile = fullfile(surfGroupDir,[hem{h} '.FLAT.coord']);
+            flatcoord=caret_load(flatFile);            
+          
+            Y_trained=fullfile(surfGroupDir,sprintf('%s.TrainSeq_sess%d.metric',hem{h},sessN));
+            Y_untrained=fullfile(surfGroupDir,sprintf('%s.UntrainSeq_sess%d.metric',hem{h},sessN));
+
+            S=caret_crosssection_flat(flatcoord.data,fullfile(surfGroupDir,[hem{h} '.surface_shape']),coord_start(h,:),coord_end(h,:),15);
+            Y.tr=caret_crosssection_flat(flatcoord.data,Y_trained,coord_start(h,:),coord_end(h,:),15);
+            Y.utr=caret_crosssection_flat(flatcoord.data,Y_untrained,coord_start(h,:),coord_end(h,:),15);
+
+            
+            x=[1:size(Y.tr,1)];
+            figure;
+            title(sprintf('session %d',sessN))
+            subplot(3,1,[1:2]);
+            hold on;
+            traceplot(x,Y.tr','errorfcn','stderr','linecolor','r','linewidth',2,'patchcolor','r');
+            traceplot(x,Y.utr','errorfcn','stderr','linecolor','b','linewidth',2,'patchcolor','b');
+            ylabel('Percent signal change');
+            ylim(LimDist);
+            set(gca,'XLim',[1 length(x)]);
+            drawline(0,'dir','horz');
+            drawline(1,'dir','horz');
+            drawline(2,'dir','horz');
+            drawline(3,'dir','horz');
+        end;
+        subplot(3,1,3);
+        plot(x,S(:,2));
+        set(gca,'Box','off','XLim',[1 length(x)],'YLim',[-1.5 1.5]);
+        set(gcf,'PaperPosition',[2 2 5 3]);
+ 
+        
     case 'SEARCH_all'
         vararginoptions(varargin,{'sn','sessN'});
         if sessN == 1
@@ -2137,32 +2344,41 @@ switch(what)
             indMat = indicatorMatrix('allpairs',[1:12]);
             trainInd = [];
             untrainInd = [];
+            crossInd = [];
             for i=1:length(indMat)
                 if sum(any(indMat(i,num_train),1))==2
                     trainInd=[trainInd;i]; 
                 elseif sum(any(indMat(i,num_untrain),1))==2
                     untrainInd=[untrainInd;i];
+                elseif sum(any(indMat(i,num_train),1))==1 & sum(any(indMat(i,num_untrain),1))==1
+                    crossInd=[crossInd;i];
                 else
                 end
             end
             
             trainDist = vdat(:,:,:,trainInd);
             untrainDist = vdat(:,:,:,untrainInd);
+            crossDist = vdat(:,:,:,crossInd);
+            
             
             T = Y;
             U = Y;
+            Z = Y;
             T.LDC = nanmean(trainDist,4);
             U.LDC = nanmean(untrainDist,4);
+            Z.LDC = nanmean(crossDist,4);
             T.fname = sprintf('%s_sess%d_dist_trained.nii',subj_name{s},sessN);
             U.fname = sprintf('%s_sess%d_dist_untrained.nii',subj_name{s},sessN);
+            Z.fname = sprintf('%s_sess%d_dist_cross.nii',subj_name{s},sessN);
             
             % save outputs
             spm_write_vol(Y,Y.LDC);
             spm_write_vol(T,T.LDC);
             spm_write_vol(U,U.LDC);
+            spm_write_vol(Z,Z.LDC);
             fprintf('Done %s_sess%d \n',subj_name{s},sessN)
             
-            clear vol vdat LDC Y T U
+            clear vol vdat LDC Y T U Z
             
         end
         cd(cWD);  % return to working directory
@@ -2172,7 +2388,7 @@ switch(what)
         sessN = 1;
         
         vararginoptions(varargin,{'sn','sessN'});
-        fileList = {'dist','dist_trained','dist_untrained'};
+        fileList = {'dist','dist_trained','dist_untrained','dist_cross'};
         hemisphere = 1:2;
         
         for s = sn
@@ -2192,7 +2408,179 @@ switch(what)
                 fprintf('Done subj %d sess %d hemi %d \n',s,sessN,h);
             end;    % hemi
         end;    % subj
-    
+    case 'SEARCH_group_make'                                                % STEP 4.5   :  Make group metric files by condensing subjec contrast metric files
+        % Calculate group metric files from the searchlight results. 
+        % Takes the 4 contrast results ('dist','dist_trained','dist_untrained','dist_cross') across
+        % subjects and makes a group level metric file that contains each
+        % subject's data for that contrast type.
+        sessN=1;
+        sn=[1:5,7];
+        vararginoptions(varargin,{'sessN','sn'});
+        % Some presets
+        name = 'dist';
+
+        OUTname    = {'dist_all','dist_trained','dist_untrained','dist_cross'};
+        inputcol   = [1 2 3 4];
+        replaceNaN = [1 1 1 1];
+        
+        % Loop over hemispheres.
+        for h = 1:2
+            % Go to the directory where the group surface atlas resides
+            surfaceGroupDir = [caretDir filesep atlasname filesep hemName{h}];
+            cd(surfaceGroupDir);
+            % Loop over each input metric file in 'INname' and make a group metric file
+            for j = 1:length(OUTname);
+                % Loop over subjects...
+                for i = 1:length(sn);
+                    % ...and define the names of their metric files
+                    infilenames{j}{i} = fullfile(caretDir,[atlasA subj_name{sn(i)}], hemName{h}, sprintf('%s_sess%d_%s.metric',subj_name{sn(i)},sessN,name));
+                    % Name the output filename for this group metric file in average surface folder
+                end;
+                outfilenames{j} = [surfaceGroupDir filesep hem{h} '.' OUTname{j} '_sess' num2str(sessN) '.metric'];
+                % Finally, make the group metric file for this metric type/contrast
+                caret_metricpermute(infilenames{j},'outfilenames',outfilenames(j),'inputcol',inputcol(j),'replaceNaNs',replaceNaN(j));
+                % Verbose display to user
+                fprintf('hem: %i  image: %i \n', h,j);
+            end;
+        end;
+    case 'SEARCH_group_cSPM'                                                % STEP 4.6   :  Generate a statistical surface map (onesample_t test) from smoothed group metric files. Also avgs. distances across subjs.
+        % Calculate group stats files from the group metric files. 
+        % Takes 4 contrast results ('dist','dist_trained','dist_untrained','dist_cross')  and 
+        % calculates group level stats (one sample t test that the mean 
+        % effect is bigger than zero). 
+        % 
+        % Although we calculate the t-score, corresponding p-value for that
+        % t-score, and finally the z-score 
+        % subject's data for that contrast type.
+        
+        sessN=1;
+        sn=[1:5,7];
+        s=1:length(sn);
+        vararginoptions(varargin,{'sessN','sn'});
+        
+        SPMname={'dist_all','dist_trained','dist_untrained','dist_cross'};
+        
+        sqrtTransform=[1,1,1,1]; % Should you take ssqrt before submitting? 
+                                % Yes, b/c used rsa.distanceLDC to
+                                % calculate distances. This function
+                                % returns squared cv mahalanobis distance.
+        SummaryName = sprintf('.summary_sess%d.metric',sessN);
+        hemi = [1 2];
+        
+        for h=hemi
+            surfaceGroupDir=[caretDir filesep 'fsaverage_sym'  filesep hemName{h}];
+            %----get the full directory name of the metric files and the NONsmoothed metric files that we create below
+            for i=1:length(SPMname);
+                %sfilenames{i}=[surfaceGroupDir filesep 's' hem{h} '.' SPMname{i} '.metric']; % smoothed
+                sfilenames{i}=[surfaceGroupDir filesep hem{h} '.' SPMname{i} '_sess' num2str(sessN) '.metric']; % no smoothing
+            end;
+            %----loop over the metric files and calculate the cSPM of each with the non-smoothed metrics
+            for i=1:length(SPMname);
+                Data=caret_load(sfilenames{i});
+                if sqrtTransform(i)
+                    Data.data=ssqrt(Data.data);
+                end;
+                cSPM=caret_getcSPM('onesample_t','data',Data.data(:,s),'maskthreshold',0.5); % set maskthreshold to 0.5 = calculate stats at location if 50% of subjects have data at this point
+                caret_savecSPM([surfaceGroupDir filesep hem{h} '.' SPMname{i} '_stats.metric'],cSPM);
+                save([surfaceGroupDir  filesep   'cSPM_' SPMname{i} '.mat'],'cSPM');
+                data(:,i)=cSPM.con(1).con; % mean
+                data(:,i+length(SPMname))=cSPM.con(1).Z; % T
+                column_name{i}=['mean_' SPMname{i} '_sess' num2str(sessN)];
+                column_name{i+length(SPMname)}=['T_' SPMname{i} '_sess' num2str(sessN)];
+            end;
+            C = caret_struct('metric','data',data,'column_name',column_name);
+            caret_save([surfaceGroupDir  filesep hem{h} SummaryName],C);
+        end;
+        fprintf('Done \n')
+    case 'SEARCH_dist_crosssection'
+        sessN=1;
+        vararginoptions(varargin,{'sessN'});
+        
+        LimDist = [-0.001,0.002];
+        
+        for h=1
+            surfGroupDir=[caretDir filesep 'fsaverage_sym'  filesep hemName{h} ];
+            border=fullfile(surfGroupDir,'CS.borderproj');
+            
+            Y_trained=fullfile(surfGroupDir,sprintf('%s.dist_trained_sess%d.metric',hem{h},sessN));
+            Y_untrained=fullfile(surfGroupDir,sprintf('%s.dist_untrained_sess%d.metric',hem{h},sessN));
+            
+            X=caret_crosssection(border,fullfile(surfGroupDir,[hem{h} '.INFLATED.coord']));
+            S=caret_crosssection(border,fullfile(surfGroupDir,[hem{h} '.surface_shape']));
+            Y.tr=caret_crosssection(border,Y_trained);
+            Y.utr=caret_crosssection(border,Y_untrained);
+
+            x=[1:size(Y.tr,1)];
+            figure(sessN);
+            subplot(3,1,[1:2]);
+            hold on;
+            title(sprintf('session %d',sessN))
+            traceplot(x,Y.tr','errorfcn','stderr','linecolor','r','linewidth',2,'patchcolor','r');
+            traceplot(x,Y.utr','errorfcn','stderr','linecolor','b','linewidth',2,'patchcolor','b');
+            ylabel('Average distance');
+            ylim(LimDist);
+            set(gca,'XLim',[1 length(x)]);
+            drawline(0,'dir','horz');
+            legend({'','Trained','','Untrained'});
+        end;
+        subplot(3,1,3);
+        plot(x,S(:,2));
+        set(gca,'Box','off','XLim',[1 length(x)],'YLim',[-1.5 1.5]);
+        set(gcf,'PaperPosition',[2 2 5 3]);
+
+    case 'SEARCH_dist_crossflat'
+        sessN=1;
+        vararginoptions(varargin,{'sessN'});
+        
+        LimDist = [-0.0005,0.003];
+        coord_start = [-30 0]; 
+        coord_end = [40 0];
+        
+        for h=1
+            surfGroupDir=[caretDir filesep 'fsaverage_sym'  filesep hemName{h} ];
+            flatFile = fullfile(surfGroupDir,[hem{h} '.FLAT.coord']);
+            flatcoord=caret_load(flatFile);            
+          
+            Y_trained=fullfile(surfGroupDir,sprintf('%s.dist_trained_sess%d.metric',hem{h},sessN));
+            Y_untrained=fullfile(surfGroupDir,sprintf('%s.dist_untrained_sess%d.metric',hem{h},sessN));
+            Y_cross=fullfile(surfGroupDir,sprintf('%s.dist_cross_sess%d.metric',hem{h},sessN));
+            
+            S=caret_crosssection_flat(flatcoord.data,fullfile(surfGroupDir,[hem{h} '.surface_shape']),coord_start(h,:),coord_end(h,:),15);
+            Y.tr=caret_crosssection_flat(flatcoord.data,Y_trained,coord_start(h,:),coord_end(h,:),15);
+            Y.utr=caret_crosssection_flat(flatcoord.data,Y_untrained,coord_start(h,:),coord_end(h,:),15);
+            Y.cross=caret_crosssection_flat(flatcoord.data,Y_cross,coord_start(h,:),coord_end(h,:),15);
+            
+            x=[1:size(Y.tr,1)];
+            figure;
+            subplot(3,1,[1:2]);
+            hold on;
+            title(sprintf('session %d',sessN))
+            traceplot(x,Y.tr','errorfcn','stderr','linecolor','r','linewidth',2,'patchcolor','r');
+            traceplot(x,Y.utr','errorfcn','stderr','linecolor','b','linewidth',2,'patchcolor','b');
+            ylabel('Average distance');
+            ylim(LimDist);
+            set(gca,'XLim',[1 length(x)]);
+            drawline(0,'dir','horz');
+        end;
+        subplot(3,1,3);
+        plot(x,S(:,2));
+        set(gca,'Box','off','XLim',[1 length(x)],'YLim',[-1.5 1.5]);
+        set(gcf,'PaperPosition',[2 2 5 3]);
+        
+        figure;
+        subplot(3,1,[1:2]);
+        hold on;
+        title(sprintf('session %d',sessN))
+        traceplot(x,Y.cross','errorfcn','stderr','linecolor','r','linewidth',2,'patchcolor','r');
+        ylabel('Average cross seq-set distance');
+        ylim(LimDist);
+        set(gca,'XLim',[1 length(x)]);
+        drawline(0,'dir','horz');
+        subplot(3,1,3);
+        plot(x,S(:,2));
+        set(gca,'Box','off','XLim',[1 length(x)],'YLim',[-1.5 1.5]);
+        set(gcf,'PaperPosition',[2 2 5 3]);
+        
     case 'SEARCH_fingmap_runLDC'                                            % STEP 4.1b   :  Runs LDC searchlight using defined searchlights (above)
 
         glm=2;
@@ -2775,18 +3163,47 @@ switch(what)
             % load files
             load(fullfile(glmSessDir{sessN}, subj_name{s},'SPM.mat'));  % load subject's SPM data structure (SPM struct)
             load(fullfile(regDir,[subj_name{s} '_regions.mat']));        % load subject's region parcellation (R)
+            
+            cd (fullfile(glmSessDir{sessN},subj_name{s}));
+            
+            P=SPM.Vbeta(SPM.xX.iC);
+            
+            % Add a few extra images
+            %----task against rest
+            O{1}=sprintf('psc_sess%d_TrainSeq.nii',sessN); %psc trained
+            O{2}=sprintf('psc_sess%d_UntrainSeq.nii',sessN); %psc untrained
+            O{3}=sprintf('%s_sess%d_dist_trained.nii',subj_name{s},sessN); %dist trained
+            O{4}=sprintf('%s_sess%d_dist_untrained.nii',subj_name{s},sessN); %dist untrained
+            O{5}=sprintf('%s_sess%d_dist_cross.nii',subj_name{s},sessN); %dist cross
+            oP=spm_vol(char(O));
 
             V = SPM.xY.VY; 
             
             for r = roi % for each region
                 % get raw data for voxels in region
                 Y = region_getdata(V,R{r});  % Data Y is N x P 
+                data = region_getdata(oP,R{r}); % from added images
+                
+                % voxel position
+                S.volcoord = {R{r}.data'}; 
+                S.flatcoord = {R{r}.flatcoord'}; 
+                S.depth = {R{r}.depth'}; 
+                
                 % estimate region betas
-                [betaW,resMS,SW_raw,beta] = rsa.spm.noiseNormalizeBeta(Y,SPM,'normmode','overall');
+                [betaW,resMS,SW_raw,beta] = rsa.spm.noiseNormalizeBeta(Y,SPM,'normmode','runwise');
                 S.betaW                   = {betaW};                             % multivariate pw
                 S.betaUW                  = {bsxfun(@rdivide,beta,sqrt(resMS))}; % univariate pw 
                 S.betaRAW                 = {beta};
                 S.resMS                   = {resMS};
+                
+                % info from maps for surface
+                S.psc_train   = {data(1,:)}; 
+                S.psc_untrain = {data(2,:)};
+                S.searchlightdist_train = {data(3,:)}; 
+                S.searchlightdist_untrain = {data(4,:)};
+                S.searchlightdist_cross = {data(5,:)};
+
+                
                 S.SN                      = s;
                 S.region                  = r;
                 T = addstruct(T,S);
@@ -2812,16 +3229,36 @@ switch(what)
             load(fullfile(glmFoSExDir{sessN}, subj_name{s},'SPM.mat'));  % load subject's SPM data structure (SPM struct)
             load(fullfile(regDir,[subj_name{s} '_regions.mat']));        % load subject's region parcellation (R)
             V = SPM.xY.VY; 
+            glmSubjDir = fullfile(glmFoSExDir{sessN},subj_name{s});
+            cd(glmSubjDir);
+            
+            % Add a few extra images
+            %----task against rest
+            O{1}=sprintf('psc_sess%d_TrainSeq_1st.nii',sessN); %psc trained - 1st execution
+            O{2}=sprintf('psc_sess%d_UntrainSeq_1st.nii',sessN); %psc untrained - 1st execution
+            O{3}=sprintf('psc_sess%d_TrainSeq_2nd.nii',sessN); %psc trained - 2nd execution
+            O{4}=sprintf('psc_sess%d_UntrainSeq_2nd.nii',sessN); %psc trained - 2nd execution
+            oP=spm_vol(char(O));
+
             
             for r = roi % for each region
                 % get raw data for voxels in region
                 Y = region_getdata(V,R{r});  % Data Y is N x P 
+                data = region_getdata(oP,R{r}); % from added images
+                
                 % estimate region betas
-                [betaW,resMS,SW_raw,beta] = rsa.spm.noiseNormalizeBeta(Y,SPM,'normmode','overall');
+                [betaW,resMS,SW_raw,beta] = rsa.spm.noiseNormalizeBeta(Y,SPM,'normmode','runwise');
                 S.betaW                   = {betaW};                             % multivariate pw
                 S.betaUW                  = {bsxfun(@rdivide,beta,sqrt(resMS))}; % univariate pw 
                 S.betaRAW                 = {beta};
                 S.resMS                   = {resMS};
+                
+                 % info from maps for surface
+                S.psc_train_1st   = {data(1,:)}; 
+                S.psc_untrain_1st = {data(2,:)};
+                S.psc_train_2nd   = {data(3,:)}; 
+                S.psc_untrain_2nd = {data(4,:)};
+                
                 S.SN                      = s;
                 S.region                  = r;
                 T = addstruct(T,S);
@@ -2870,7 +3307,7 @@ switch(what)
         fprintf('\n');  
     case 'ROI_stats'                                                        % STEP 5.8   :  Calculate stats/distances on activity patterns - train/untrain seq
         sessN = 1;
-        sn  = [1:5];
+        sn  = [1:5,7];
         roi = [1:16];
         betaChoice = 'multi'; % uni, multi or raw
         vararginoptions(varargin,{'sn','sessN','roi','betaChoice'});
@@ -2881,6 +3318,7 @@ switch(what)
         Ts = [];
         To = [];
         
+        g_ind=1;
         % do stats
         for s = sn % for each subject
             D = load(fullfile(glmSessDir{sessN}, subj_name{s}, 'SPM_info.mat'));   % load subject's trial structure
@@ -2888,6 +3326,7 @@ switch(what)
             num_run = numruns_task_sess;
             
             for r = roi % for each region
+                beta_seqType=[];
                 S = getrow(T,(T.SN==s & T.region==r)); % subject's region data
                 fprintf('%d.',r)
                 
@@ -2903,19 +3342,62 @@ switch(what)
                 % % To structure stats (all seqNumb - 12 conditions)
                 % crossval second moment matrix
                 [G,Sig]     = pcm_estGCrossval(betaW(1:(12*num_run),:),D.run,D.seqNumb);
+                
                 So.IPM      = rsa_vectorizeIPM(G);
                 So.Sig      = rsa_vectorizeIPM(Sig);
                 % squared distances
-                So.RDM_nocv = distance_euclidean(betaW',D.seqNumb)';
                 So.RDM      = rsa.distanceLDC(betaW,D.run,D.seqNumb);
-                % trained seq
+                
+                % calculate G for trained / untrained / between the two
                 H=eye(6)-ones(6,6)./6;  % centering matrix!
                 [G_train, Sig_train] = pcm_estGCrossval(betaW(D.seqType==1,:),D.run(D.seqType==1),D.seqNumb(D.seqType==1));   
+                [G_untrain, Sig_untrain] = pcm_estGCrossval(betaW(D.seqType==2,:),D.run(D.seqType==2),D.seqNumb(D.seqType==2));
+                % calculate average train / average untrain pattern
+                indx=1;
+                indx_seqType=[];
+                indx_run=[];
+                for rr = 1:num_run
+                    for seq = 1:max(unique(D.seqType))
+                        beta_seqType(indx,:)=mean(betaW(D.seqType==seq & D.run==rr,:),1);
+                        indx=indx+1;
+                        indx_seqType=[indx_seqType;seq]; % 1 - train, 2 - untrain
+                        indx_run=[indx_run;rr]; % 1-8 func runs
+                    end
+                end
+                [G_seqType, Sig_seqType] = pcm_estGCrossval(beta_seqType,indx_run,indx_seqType);
+                
+                % add all subjects, regions - G values (to check if
+                % meaningful / visualise)
+                G_all(:,:,g_ind)=G;
+                G_all_seqType(:,:,g_ind)=G_seqType;
+                g_ind=g_ind+1;
+                % calculate distances
+                ind6=indicatorMatrix('allpairs',[1:6]);
+                ind2=indicatorMatrix('allpairs',[1:2]);
+                ind12=indicatorMatrix('allpairs',[1:12]);
+                
+                dist_train = rsa.rdm.squareRDM(diag(ind6*G_train*ind6'));
+                dist_untrain = rsa.rdm.squareRDM(diag(ind6*G_untrain*ind6'));
+                dist_cross = diag(ind2*G_seqType*ind2');
+                dist_all = rsa.rdm.squareRDM(diag(ind12*G*ind12'));
+                
+
+                So.dist_train = mean(dist_train(:));
+                So.dist_untrain = mean(dist_untrain(:));
+                So.dist_cross = mean(dist_cross);
+                
+                
                 G_trainCent = H*G_train*H;  % double centered G matrix - rows and columns
                 So.eigTrain = sort(eig(G_trainCent)','descend');    % sorted eigenvalues
-                [G_untrain, Sig_untrain] = pcm_estGCrossval(betaW(D.seqType==2,:),D.run(D.seqType==2),D.seqNumb(D.seqType==2));
                 G_untrainCent = H*G_untrain*H;  % double centered G matrix - rows and columns
                 So.eigUntrain = sort(eig(G_untrainCent)','descend');
+                
+                So.psc_train = nanmean(S.psc_train{:});
+                So.psc_untrain = nanmean(S.psc_untrain{:});
+                So.surfdist_train = nanmean(S.searchlightdist_train{:});
+                So.surfdist_untrain = nanmean(S.searchlightdist_untrain{:});
+                
+                %So.crossdist = ssqrt(rsa.distanceLDC(beta_seqType,indx_run,indx_seqType));
                 % untrained seq
                 % indexing fields
                 So.SN       = s;
@@ -2927,6 +3409,26 @@ switch(what)
             end; % each region
         end; % each subject
 
+        G_average = nanmean(G_all,3);
+        G_group1 = nanmean(G_all(:,:,ismember(To.SN,[1:2:7])),3);
+        G_group2 = nanmean(G_all(:,:,ismember(To.SN,[2,4])),3);
+        figure
+        imagesc(rsa.rdm.squareRDM(diag(ind12*G_average*ind12')));
+        title(sprintf('average RDM across subjects / regions, session %d',sessN));
+        hold on;
+        drawline(6.5,'dir','horz');
+        drawline(6.5,'dir','vert');
+        
+        figure
+        subplot(1,3,1)
+        histogram(To.dist_cross); hold on; drawline(median(To.dist_cross),'dir','vert','color',[1 0 0]);
+        title('Distances between trained / untrained pattern');
+        subplot(1,3,2)
+        histogram(To.dist_train); hold on; drawline(median(To.dist_train),'dir','vert','color',[1 0 0]);
+        title('Distances within trained seq pattern');
+        subplot(1,3,3)
+        histogram(To.dist_untrain); hold on; drawline(median(To.dist_untrain),'dir','vert','color',[1 0 0]);
+        title('Distances within trained seq pattern');
         % % save
         save(fullfile(regDir,sprintf('stats_%sPW_sess%d.mat',betaChoice,sessN)),'-struct','To');
         fprintf('\nDone.\n')    
@@ -3070,7 +3572,7 @@ switch(what)
         roi = 2; % default LH primary motor cortex
         betaChoice = 'uw';  % raw / uw / mw -> MW performs the best!
         removeMean = 'yes'; % are we removing pattern means for patternconsistency?
-        vararginoptions(varargin,{'sn','glm','roi','betaChoice','removeMean'});
+        vararginoptions(varargin,{'sn','glm','roi','betaChoice','removeMean','sessN'});
         
         if strcmp(removeMean,'yes')
              rm = 1; % we are removing the mean
@@ -3078,9 +3580,11 @@ switch(what)
         end
   
         Rreturn=[];
+        C=[];
+        CAll=[];
         %========%
-        for s=sessN
-            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',s))); % loads in struct 'T'
+        for ss=sessN
+            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss))); % loads in struct 'T'
             for r=roi
                 Rall=[]; %prep output variable
                 for s=sn
@@ -3088,11 +3592,11 @@ switch(what)
                     runs = 1:numruns_task_sess; % 8 func runs
                     switch(betaChoice)
                         case 'raw'
-                            betaW  = S.betaW{1}; 
+                            betaW  = S.betaRAW{1};
                         case 'uw'
-                            betaW  = S.betaUW{1}; 
+                            betaW  = S.betaUW{1};
                         case 'mw'
-                            betaW  = S.betaRAW{1}; 
+                            betaW  = S.betaW{1};
                     end
                     
                     % make vectors for pattern consistency func
@@ -3101,12 +3605,22 @@ switch(what)
                     % calculate the pattern consistency
                     R2   = rsa_patternConsistency(betaW,partition,conditionVec,'removeMean',rm);
                     Rall = [Rall,R2];
+                    C.sn=s;
+                    C.roi=r;
+                    C.consist=R2;
+                    C.sessN=ss;
+                    CAll=addstruct(CAll,C);
                 end
-                Rreturn = [Rreturn;Rall];
+                
+                
             end
         end
-        varargout = {Rreturn};
-        fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
+        %varargout = {Rreturn};
+        figure;
+        lineplot(CAll.sessN,CAll.consist,'split',CAll.roi,'style_thickline','leg',regname);
+        xlabel('Session'); ylabel('Consisteny'); title(sprintf('Consistency within session with %s prewhitened betas',betaChoice));
+        keyboard;
+        %fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
         % output arranged such that each row is an roi, each col is subj
         
         %_______________    
@@ -3373,7 +3887,8 @@ switch(what)
         varargout = {Rreturn};
         fprintf('The consistency for %s betas in region %s is',betaChoice,regname{roi});
         % output arranged such that each row is an roi, each col is subj
-    case 'pattern_cosist'
+    
+    case 'pattern_consist'
          % evaluate consistency of measures (psc, beta, z-scores) across
         % sessions for finger mapping
         
@@ -3460,7 +3975,247 @@ switch(what)
        
         
         keyboard;  
-    case 'pattern_reliability'
+    case 'reliability_between' 
+        % collects data of interest, submits it to the main case
+        reg = [1:8];
+        sn  = [1:5,7];
+        sessN = [1:2];
+        
+        vararginoptions(varargin,{'sn','reg','sessN'});
+        CAll = [];
+        for s = sn;
+            for roi = reg;
+                for  ss = 1:numel(sessN)
+                    D{ss}   = load(fullfile(regDir,sprintf('betas_sess%d.mat',sessN(ss))));
+                    T{ss}   = getrow(D{ss},D{ss}.region==roi);
+                    t = getrow(T{ss},T{ss}.SN==s);
+                    data{ss} = t.betaUW{1};
+                    C=[];
+                end
+                % send data to another case
+                C = sml1_imana('reliability_corr',data,1,numruns_task_sess);    % subtract mean, num of runs
+                C.roi = ones(size(C.w1)).*roi;
+                C.sn = ones(size(C.w1)).*s;
+                CAll=addstruct(CAll,C);
+            end
+        end
+
+        keyboard;
+        figure;
+        for r = 1:numel(reg)
+            subplot(1,numel(reg),r)
+            barplot(CAll.seqType,[CAll.w1 CAll.w2 CAll.acr CAll.geoMean],'subset',CAll.roi==reg(r),'leg',{'within sess1','within sess2','across sess','geometric mean'});
+            %set(gca,'XTick',[2.5 7],'XtickLabel',{'trained','untrained'});
+            if r==1
+                ylabel('correlation - geoMean corrected');
+            else
+                ylabel('');
+            end
+            title(sprintf(regname{r}));
+        end
+        
+        % correction overall for negative correlations
+        figure;
+        for r = 1:numel(reg)
+            subplot(1,numel(reg),r)
+            barplot(CAll.seqType,[CAll.w1_b CAll.w2_b CAll.acr_b CAll.geoMean_b],'subset',CAll.roi==reg(r),'leg',{'within sess1','within sess2','across sess','geometric mean'});
+            %set(gca,'XTick',[2.5 7],'XtickLabel',{'trained','untrained'});
+            if r==1
+                ylabel('correlation - fully corrected');
+            else
+                ylabel('');
+            end
+            title(sprintf(regname{r}));
+        end
+        
+        
+        figure
+        barplot(CAll.seqType,[CAll.w1 CAll.w2 CAll.acr CAll.geoMean],'subset',CAll.roi~=6,'leg',{'within sess1','within sess2','across sess','geometric mean'});
+        set(gca,'XTick',[2.5 7],'XtickLabel',{'trained','untrained'});
+        title(sprintf('Session %d - %d',sessN(1),sessN(2)));
+        
+        keyboard;
+
+    case 'reliability_simulate'
+        % create different data types for simulating correlations within /
+        % between sessions
+        type = 'corr+noise';
+        run_type = '2runs';
+        vararginoptions(varargin,{'type','run_type'});
+        P = 100;    % number of voxels simulated
+        cond = 12;  % number of conditions
+        switch (run_type)
+            case '2runs'
+                run=2;
+            case '8runs'
+                run=8;
+        end
+        
+        switch(type)
+            case 'random'
+                % both datasets completely random
+                % no correlation within / across runs
+                data{1} = randn(run*cond,P);
+                data{2} = randn(run*cond,P);      
+            case 'corr1' % perfect correlation
+                data1 = randn(cond,P);
+                data{1}=repmat(data1,[run,1]);
+                data{2}=data{1};
+            case 'corr1+noise' % add noise levels on top of perfect correlation
+                data1 = randn(cond,P);
+                noise_lev = 0.80;   % amount of noise level
+                
+                true_X = repmat(data1,[run,1]);
+                noise_X  = randn(cond,P).*noise_lev;
+
+                data{1} = true_X + noise_X;
+                data{2} = true_X + noise_X;
+            case 'corr+noise' % lower correlation + noise
+                
+                % decide on the weights
+                th.a = 0.3;  % common pattern
+                th.b1 = 0.2; % trained
+                th.b2 = 0.2; % untrained
+                th.c1 = 0.6; % session 1
+                th.c2 = 0.6; % session 2
+                th.d1 = 0.3; % run1
+                th.d2 = 0.3;
+                th.d3 = 0.3;
+                th.d4 = 0.3;
+                
+                % underlying patterns
+                X_common = randn(6,P)*th.a;
+                X_trained = randn(6,P)*th.b1;
+                X_untrained = randn(6,P)*th.b2;
+                X_sess1 = randn(6,P)*th.c1;
+                X_sess2 = randn(6,P)*th.c2;
+                X_run1 = randn(6,P)*th.d1;
+                X_run2 = randn(6,P)*th.d2;
+                X_run3 = randn(6,P)*th.d3;
+                X_run4 = randn(6,P)*th.d4;
+                
+                % data sess1
+                data{1}(1:6,:) = X_common+X_trained+X_sess1+X_run1;
+                data{1}(7:12,:) = X_common+X_untrained+X_sess1+X_run1;
+                data{1}(13:18,:) = X_common+X_trained+X_sess1+X_run2;
+                data{1}(19:24,:) = X_common+X_untrained+X_sess1+X_run2;
+                
+                % data sess2
+                data{2}(1:6,:) = X_common+X_trained+X_sess2+X_run3;
+                data{2}(7:12,:) = X_common+X_untrained+X_sess2+X_run3;
+                data{2}(13:18,:) = X_common+X_trained+X_sess2+X_run4;
+                data{2}(19:24,:) = X_common+X_untrained+X_sess2+X_run4;
+                
+                % send to different function - calculate var / cov
+                S = analytic_cov(th);
+
+        end
+        CAll = [];
+        
+        for perm = 1:1000
+            C = sml1_imana('reliability_corr',data,1,run);
+            C.perm = ones(size(C.w1)).*perm;
+            CAll=addstruct(CAll,C);
+        end
+        CAll.dif = CAll.acr - CAll.geoMean; 
+        % CAll.dif - positive when rel across sess bigger than geometric
+        % mean of reliability of each session
+        figure;
+        histogram(CAll.dif,'Normalization','probability');
+        figure;
+        barplot(CAll.seqType,[CAll.w1 CAll.w2 CAll.acr CAll.geoMean]);
+        keyboard;
+    case 'reliability_corr'
+        data=varargin{1};
+        subtract_mean=varargin{2};
+        fig = 0;
+        
+        sess = size(data,2);
+        partitions = [1:2:numruns_task_sess; 2:2:numruns_task_sess];
+        numRuns    = 1:numruns_task_sess;
+        numConds   = num_seq;
+        conds   = repmat([numConds],1,length(numRuns));
+        runNums = kron([numRuns],ones(1,length(numConds)));
+        
+        for ss = 1:sess
+            
+            % subtract mean per run
+            if subtract_mean
+                for r=numRuns
+                    data{ss}(runNums==r,:) = bsxfun(@minus,data{ss}(runNums==r,:),mean(data{ss}(runNums==r,:)));
+                end
+            else
+                data{ss}=data{ss};
+            end
+            
+            % split datas per partition
+            for i = 1:size(partitions,1)
+                partitionIdx = logical(ismember(runNums,partitions(i,:)))';
+                condIdx{i}   = conds(partitionIdx);
+                prepBetas{ss}{i} = data{ss}(partitionIdx,:); % session / partition
+            end
+            
+            % calculate average pattern per partition
+            for c1 = numConds % for each condition
+                % condition mean activity pattern for this run partition
+                oddCon   = condIdx{1}==c1;
+                oddBetas{ss}(c1,:) = mean(prepBetas{ss}{1}(oddCon,:));
+                % condition mean activity pattern for the other run partition
+                evenCon   = condIdx{2}==c1;
+                evenBetas{ss}(c1,:) = mean(prepBetas{ss}{2}(evenCon,:));
+            end
+        end
+        
+        % correlate patterns across partitions, both within and across
+        % conditions
+        for c1 = numConds % for each condition
+            % correlate within sessions
+            W1 = corrcoef(oddBetas{1}(c1,:),evenBetas{1}(c1,:));
+            W2 = corrcoef(oddBetas{2}(c1,:),evenBetas{2}(c1,:));
+            Acr1 = corrcoef(oddBetas{1}(c1,:),oddBetas{2}(c1,:));
+            Acr2 = corrcoef(evenBetas{1}(c1,:),evenBetas{2}(c1,:));
+            Acr3 = corrcoef(oddBetas{1}(c1,:),evenBetas{2}(c1,:));
+            Acr4 = corrcoef(oddBetas{2}(c1,:),evenBetas{1}(c1,:));
+            % correlate condition patterns across partitions
+            C.w1(c1,:) = W1(1,2);
+            C.w2(c1,:) = W2(1,2);
+            C.acr(c1,:) = mean([Acr1(1,2),Acr2(1,2),Acr3(1,2),Acr4(1,2)]);
+        end
+        
+        for cond = numConds
+            % if one of the correlations is negative, make geoMean 0
+            if (C.w1(cond)<0 | C.w2(cond)<0)
+                C.geoMean(cond,:) = 0;
+            else
+                C.geoMean(cond,:) = sqrt(C.w1(cond).*C.w2(cond));
+            end
+            
+            % if one of the correlations is negative, make all data 0
+            if (C.w1(cond)<0 | C.w2(cond)<0)
+                C.w1_b(cond,:)=0;
+                C.w2_b(cond,:)=0;
+                C.geoMean_b(cond,:)=0;
+                C.acr_b(cond,:)=0;
+            else 
+                C.w1_b(cond,:)=C.w1(cond);
+                C.w2_b(cond,:)=C.w2(cond);
+                C.geoMean_b(cond,:)=sqrt(C.w1(cond).*C.w2(cond));
+                C.acr_b(cond,:)=C.acr(cond,:);
+            end
+
+        end
+        C.seqType(1:6,:)=1;
+        C.seqType(7:12,:)=2;
+        
+        if fig ==1
+            figure
+            barplot(C.seqType,[C.w1 C.w2 C.geoMean C.acr],'leg',{'within sess1','within sess2','geoMean','across sessions'});
+            ylabel('Correlation');
+            set(gca,'XTick',[2.5 7]);
+            set(gca,'XTickLabel',{'trained','untrained'});
+        end
+        varargout{1}=C;
+    case 'reliability_within'
         % Splits data for each session into two partitions (even and odd runs).
         % Calculates correlation coefficients between each condition pair 
         % between all partitions.
@@ -3473,7 +4228,7 @@ switch(what)
         % Finally, plots within-condition correlations. Shaded region
         % reflects stderr across subjects.
         reg = [1:8]; 
-        sn  = [1:5];
+        sn  = [1:5,7];
         figsess = 0;
         sessN = [1:4];
         subtract_mean = 1; % subtract
@@ -3495,8 +4250,8 @@ switch(what)
 
                 sindx      = 0;
                 
-                for s = sn % for each subject
-                    t = getrow(T,T.SN==s);
+                for s = 1:numel(sn) % for each subject
+                    t = getrow(T,T.SN==sn(s));
                     sindx = sindx + 1; %per subject
                     
                     prepBetas = [];
@@ -3530,7 +4285,7 @@ switch(what)
                         splitcorrs{roi}(sindx,c1) = tmp(1,2);
                     end
                     
-                    Corr.sn = s;
+                    Corr.sn = sn(s);
                     Corr.reg = roi;
                     Corr.witSess = splitcorrs{roi}(s,:);
                     Corr.sessN = ss;
@@ -3562,13 +4317,17 @@ switch(what)
         C.train = mean(C.witSess(:,[1:6]),2);
         C.untrain = mean(C.witSess(:,[7:12]),2);
         
+        C.sessIndx=zeros(size(C.sessN));
+        C.sessIndx(C.sessN<4)=1;
+        C.sessIndx(C.sessN==4)=2;
+        
         figure
         barplot(C.sessN, [C.train C.untrain],'leg',{'train','untrain'});
         
         figure
         for i=1:numel(sn)
             subplot(1,numel(sn),i)
-             barplot(C.sessN, [C.train C.untrain],'leg',{'train','untrain'},'subset',C.sn==i);
+             barplot(C.sessN, [C.train C.untrain],'leg',{'train','untrain'},'subset',C.sn==sn(i));
         end
         
         figure
@@ -3577,196 +4336,31 @@ switch(what)
             barplot(C.sessN,[C.train C.untrain],'leg',{'train','untrain'},'subset',C.reg==i);
             title(sprintf('%s',regname{i}));
             if i==1 | i==5
-                ylabel('Correlation');
+                ylabel('Correlation - multiPW');
             else
                 ylabel('');
             end
         end
         
-        keyboard;
-    case 'pattern_reliability_acrossSess'
         
-        reg = [1:8]; 
-        sn  = [1:5];
-        fig = 1;
-        sessN = 1;
-        sess_combination = 'sequential'; % of 'altogether'
-        subtract_mean = 1; % subtract
-        partitions = [1:2:numruns_task_sess; 2:2:numruns_task_sess];
-        numRuns    = 1:numruns_task_sess;
-        numConds   = num_seq;
-        conds   = repmat([numConds],1,length(numRuns));
-        runNums = kron([numRuns],ones(1,length(numConds)));
-        % Correlate patterns across even-odd run splits within subjects.
-
-        vararginoptions(varargin,{'roi','fig','sn','subtract_mean','sessN','sess_combination'});
-        
-        switch(sess_combination)
-            case 'altogether'
-                ss_comb = [1 1 1 2 2 3; 2 3 4 3 4 4];
-            case 'sequential'
-                ss_comb = [1 2 3; 2 3 4];
-        end
-        C = [];
-        for ss = 1:size(ss_comb,2)
-
-            D1   = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss_comb(1,ss))));
-            D2   = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss_comb(2,ss))));
-            
-            for roi = reg;
-                T1   = getrow(D1,D1.region==reg(roi));
-                T2   = getrow(D2,D2.region==reg(roi));
-                sindx      = 0;
-                
-                for s = sn % for each subject
-                    t1 = getrow(T1,T1.SN==s);
-                    t2 = getrow(T2,T2.SN==s);
-                    sindx = sindx + 1; %per subject
-                    
-                    prepBetas1 = [];
-                    prepBetas2 = [];
-                    t1betaUW{1}=[];
-                    t2betaUW{1}=[];
-                    
-                    if subtract_mean
-                        for r=numRuns
-                            t1betaUW{1}(runNums==r,:) = bsxfun(@minus,t1.betaUW{1}(runNums==r,:),mean(t1.betaUW{1}(runNums==r,:)));
-                            t2betaUW{1}(runNums==r,:) = bsxfun(@minus,t2.betaUW{1}(runNums==r,:),mean(t2.betaUW{1}(runNums==r,:)));
-                        end
-                        %    prepBetas1{i} = bsxfun(@minus,t1.betaUW{1}(partitionIdx,:),mean(t1.betaUW{1}(partitionIdx,:)));
-                        %    prepBetas2{i} = bsxfun(@minus,t2.betaUW{1}(partitionIdx,:),mean(t2.betaUW{1}(partitionIdx,:)));
-                    else
-                        t1betaUW{1}=t1.betaUW{1};
-                        t2betaUW{1}=t2.betaUW{1};
-                        %    prepBetas1{i} = t1.betaUW{1}(partitionIdx,:);
-                        %   prepBetas2{i} = t2.betaUW{1}(partitionIdx,:);
-                    end
-                    
-                    % prep betas (harvest and subtract partition mean)
-                    for i = 1:size(partitions,1)
-                        partitionIdx = logical(ismember(runNums,partitions(i,:)))';
-                        condIdx{i}   = conds(partitionIdx);
-
-                        
-                        prepBetas1{i} = t1betaUW{1}(partitionIdx,:);
-                        prepBetas2{i} = t2betaUW{1}(partitionIdx,:);
-                      
-                    end
-                    
-                    oddBetas1=[]; oddBetas2=[]; evenBetas1=[]; evenBetas2=[];
-                    % correlate patterns within / across sessions
-                    for c1 = numConds % for each condition
-                        % condition mean activity pattern for this run partition
-                        oddCon   = condIdx{1}==c1;
-                        oddBetas1(c1,:) = mean(prepBetas1{1}(oddCon,:));
-                        oddBetas2(c1,:) = mean(prepBetas2{1}(oddCon,:));
-                        % condition mean activity pattern for the other run partition
-                        evenCon   = condIdx{2}==c1;
-                        evenBetas1(c1,:) = mean(prepBetas1{2}(evenCon,:));
-                        evenBetas2(c1,:) = mean(prepBetas2{2}(evenCon,:));
-                        
-                    end
-                    
-%                     if subtract_mean
-%                             oddBetas1 = bsxfun(@minus,oddBetas1,mean(oddBetas1));
-%                             oddBetas2 = bsxfun(@minus,oddBetas2,mean(oddBetas2));
-%                             evenBetas1 = bsxfun(@minus,evenBetas1,mean(evenBetas1));
-%                             evenBetas2 = bsxfun(@minus,evenBetas2,mean(evenBetas2));
-%                     end
-                    
-                    for c1 = numConds
-                        % correlate condition patterns within both sessions
-                        % their geometric product is the ceiling for
-                        % patterns across sessions
-                        tmpW1 = corrcoef(evenBetas1(c1,:),oddBetas1(c1,:));
-                        tmpW2 = corrcoef(evenBetas2(c1,:),oddBetas2(c1,:));
-                        ceilingWitSess(c1) = ssqrt(tmpW1(1,2)*tmpW2(1,2));
-
-                        % correlate condition patterns across sessions
-                        tmpAc1 = corrcoef(evenBetas1(c1,:),oddBetas2(c1,:));
-                        tmpAc2 = corrcoef(oddBetas1(c1,:),evenBetas2(c1,:));
-                        tmpAc3 = corrcoef(oddBetas1(c1,:),oddBetas2(c1,:));
-                        tmpAc4 = corrcoef(evenBetas1(c1,:),evenBetas2(c1,:));
-                        corrAcrSess(c1) = mean([tmpAc1(1,2),tmpAc2(1,2),tmpAc3(1,2),tmpAc4(1,2)]);
-                    end
-                    
-                    Corr.sn = s;
-                    Corr.reg = roi;
-                    Corr.witSess = ceilingWitSess;
-                    Corr.acrSess = corrAcrSess;
-                    if sess_combination == 'sequential' 
-                        Corr.sess_comb = ss;
-                    end
-                    C = addstruct(C,Corr);
-                end
- 
-            end
-        end; % ss_comb
-        
-        C.trainWit = mean(C.witSess(:,[1:6]),2);
-        C.untrainWit = mean(C.witSess(:,[7:12]),2);
-        C.trainAcr = mean(C.acrSess(:,[1:6]),2);
-        C.untrainAcr = mean(C.acrSess(:,[7:12]),2);
-        
-        figure;
-        if sess_combination == 'altogether'
-            barplot(C.reg,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'});
-        else
-            for i = 1:size(ss_comb,2)
-                subplot(1,size(ss_comb,2),i)
-                barplot(C.reg,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'},'subset',C.sess_comb==i);
-            end
-            figure;
-            barplot(C.sess_comb,[C.trainWit C.untrainWit C.trainAcr C.untrainAcr],'leg',{'Train within','Untain within','Train across','Untrain across'});
-            
-        end
+        a = [C.sessIndx; C.sessIndx];
+        b = [C.sessN; C.sessN];
         
         figure
         for i=1:numel(reg)
             subplot(2,4,i)
-            barplot(C.sess_comb,[C.trainAcr C.untrainAcr],'leg',{'train','untrain'},'subset',C.reg==i & C.sn==4);
+            lineplot([a b], [C.train; C.untrain],'split',[ones(size(C.train));ones(size(C.train))*2],'style_thickline','leg',{'train','untrain'},'subset',[C.reg;C.reg]==i);
             title(sprintf('%s',regname{i}));
             if i==1 | i==5
-                ylabel('Correlation');
+                ylabel('Correlation - uniPW');
             else
                 ylabel('');
             end
         end
         
-            keyboard;   
-    case 'simulate_reliability'
-        
-        D1   = load(fullfile(regDir,sprintf('betas_sess%d.mat',1)));
-        
-        T1   = getrow(D1,D1.region==1);
-        t1 = getrow(T1,T1.SN==1);
-        prepBetas = [];
-        noiseLevel = 0.3;   % 10%
-        % prep true pattern
-        
-        X = bsxfun(@minus,t1.betaUW{1}(1:12,:),mean(t1.betaUW{1}(1:12,:)));
-        
-        err = mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
-        
-        evenBetas1 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
-        oddBetas1 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
-        evenBetas2 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
-        oddBetas2 = X + mvnrnd(zeros(size(X,2),size(X,1)),ones(size(X,1),size(X,1)).*noiseLevel)';
-        
-        
-        % within session
-        tmpW1 = corrcoef(evenBetas1,oddBetas1);
-        tmpW2 = corrcoef(evenBetas2,oddBetas2);
-        ceilingWitSess = ssqrt(tmpW1(1,2)*tmpW2(1,2));
-        
-        % correlate condition patterns across sessions
-        tmpAc1 = corrcoef(evenBetas1,oddBetas2);
-        tmpAc2 = corrcoef(oddBetas1,evenBetas2);
-        tmpAc3 = corrcoef(oddBetas1,oddBetas2);
-        tmpAc4 = corrcoef(evenBetas1,evenBetas2);
-        corrAcrSess = mean([tmpAc1(1,2),tmpAc2(1,2),tmpAc3(1,2),tmpAc4(1,2)]);
-        
         keyboard;
+
+  
     case 'ROI_dimensionality'
         % estimating the dimensionality of patterns 
         % cumulative sum of eig of G
@@ -3814,7 +4408,7 @@ switch(what)
         end
     case 'ROI_act_dist'
         
-        sn = [1:5];
+        sn = [1:5,7];
         roi = [1:8];
         sessN = 1:4;
         seq = 'trained';
@@ -3850,12 +4444,12 @@ switch(what)
                     
                     clear C;
                     for d = 1:6 %sequences
-                        C.beta_seq_train(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==indx_train(d),:),1);  % beta values for each digit (avrg across blocks)
-                        C.beta_seq_untrain(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==indx_untrain(d),:),1);
+                        C.beta_seq_train(d,:)=mean(beta{T.SN==sn(s) & T.region==r}(conditionVec==indx_train(d),:),1);  % beta values for each digit (avrg across blocks)
+                        C.beta_seq_untrain(d,:)=mean(beta{T.SN==sn(s) & T.region==r}(conditionVec==indx_untrain(d),:),1);
                         %C.psc_seq(d,:)=mean(beta{T.SN==s & T.region==r}(conditionVec==seq_indx(d),:),1)./mean(beta{T.SN==s & T.region==r}(end-7:end,:),1).*100;
                     end
                                    
-                    AllDist = ssqrt(rsa_squareRDM(D.RDM(D.region==r & D.SN==sn(s),:)));
+                    AllDist = ssqrt(rsa.rdm.squareRDM(D.RDM(D.region==r & D.SN==sn(s),:)));
                     SeqTrain = triu(AllDist(indx_train,indx_train));
                     SeqUntrain = triu(AllDist(indx_untrain,indx_untrain));
                     SeqCross = triu(AllDist(indx_train,indx_untrain));
@@ -3875,19 +4469,25 @@ switch(what)
                             title(sprintf('Subject %d session %d region %s',s,ss,regname{r}));
                     end
                     
-                    S.sn=s;
+                    S.sn=sn(s);
                     S.roi=r;
                     S.dist_train=mean(SeqTrainAll); 
                     S.dist_untrain=mean(SeqUntrainAll);
                     S.dist_cross=mean(SeqCrossAll);
                     S.beta_train=mean(mean(C.beta_seq_train));
                     S.beta_untrain=mean(mean(C.beta_seq_untrain));
+                    S.dist_train2=D.dist_train(D.SN==sn(s) & D.region==r);
+                    S.dist_untrain2=D.dist_untrain(D.SN==sn(s) & D.region==r);
+                    S.dist_cross2=D.dist_cross(D.SN==sn(s) & D.region==r);
+                    
                     S.sessN=ss;
                     Stats=addstruct(Stats,S);
                 end
             end
         end
-        Stats.sessIndx = [ones(120,1); ones(40,1)*2];
+        Stats.sessIndx = zeros(size(Stats.sessN));
+        Stats.sessIndx(Stats.sessN<4)=1;
+        Stats.sessIndx(Stats.sessN==4)=2;
         
         a = [Stats.sessIndx; Stats.sessIndx];
         b = [Stats.sessN; Stats.sessN];
@@ -3897,7 +4497,7 @@ switch(what)
         for f = 1:numel(roi)
             subplot(1,numel(roi),f);
             lineplot([a b],[Stats.dist_untrain;Stats.dist_train],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
-            ylim([0 0.07])
+            ylim([0 0.04])
             if f==1
                 ylabel('Distances')
             else
@@ -3910,7 +4510,7 @@ switch(what)
         for f = 1:numel(roi)
             subplot(1,numel(roi),f);
             lineplot([Stats.sessIndx Stats.sessN],Stats.dist_cross,'style_thickline','subset',Stats.roi==f);
-            ylim([0 0.07])
+            ylim([0 0.06])
             if f==1
                 ylabel('Distance between sequence sets')
             else
@@ -3932,34 +4532,38 @@ switch(what)
             title(sprintf('%s',regname{f}))
         end
         
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([Stats.sessIndx Stats.sessN],ssqrt(Stats.dist_cross2),'style_thickline','subset',Stats.roi==f);
+            %ylim([0 0.04])
+            if f==1
+                ylabel('Cross-distance')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+        
+        
+        figure
+        for f = 1:numel(roi)
+
+            
+            subplot(2,numel(roi)/2,f);
+            lineplot([a b],[ssqrt(Stats.dist_untrain2);ssqrt(Stats.dist_train2)],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
+            %ylim([0 0.04])       
+            if f==1 | f==5
+                ylabel('Distances - uni');
+            else
+                ylabel('');
+            end
+            
+            title(sprintf('%s',regname{f}))
+        end
+        
         keyboard;
-       
-        figure;
-        subplot(1,3,1)
-        lineplot(Stats.sessN,Stats.dist_train,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
-        drawline(0,'dir','horz');
-        title('Distance trained');
         
-        subplot(1,3,2)
-        lineplot(Stats.sessN,Stats.dist_untrain,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
-        drawline(0,'dir','horz');
-        title('Distance untrained');
-        
-        subplot(1,3,3)
-        lineplot(Stats.sessN,Stats.dist_cross,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
-        drawline(0,'dir','horz');
-        title('Distance cross-seq');
-        
-        figure;
-        subplot(1,2,1)
-        lineplot(Stats.sessN,Stats.beta_train,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
-        drawline(0,'dir','horz');
-        title('Betas trained');
-        
-        subplot(1,2,2)
-        lineplot(Stats.sessN,Stats.beta_untrain,'split',Stats.roi,'style_thickline','subset',Stats.roi~=6,'leg',regname([1:5,7,8])); hold on;
-        drawline(0,'dir','horz');
-        title('Betas untrained');
         
        % [Stats.dist_train Stats.dist_untrain Stats.dist_cross]
         keyboard;      
@@ -4164,7 +4768,74 @@ switch(what)
        end
        
        keyboard;
-    
+    case 'ROI_psc_surfdist'
+       sn = [1:5,7];
+        roi = [1:8];
+        sessN = 1:4;
+        betaChoice = 'multiPW';
+
+        vararginoptions(varargin,{'sn','roi','seq','sessN','betaChoice','fig'});
+
+        Stats = [];
+        
+        for ss = sessN % do per session number
+            T = load(fullfile(regDir,sprintf('betas_sess%d.mat',ss))); % loads region data (T)
+            
+            for s=1:numel(sn)
+                for r=roi
+                    
+                    S.sn=s;
+                    S.roi=r;
+                    S.surfdist_train=nanmean(T.searchlightdist_train{(T.region==r & T.SN==sn(s)),:});
+                    S.surfdist_untrain=nanmean(T.searchlightdist_untrain{(T.region==r & T.SN==sn(s)),:});
+                    S.psc_train=nanmean(T.psc_train{(T.region==r & T.SN==sn(s)),:});
+                    S.psc_untrain=nanmean(T.psc_untrain{(T.region==r & T.SN==sn(s)),:});
+                    S.sessN=ss;
+                    
+                    Stats=addstruct(Stats,S);
+                end
+            end
+            
+        end
+        
+        
+        Stats.sessIndx = zeros(size(Stats.sessN));
+        Stats.sessIndx(Stats.sessN<4)=1;
+        Stats.sessIndx(Stats.sessN==4)=2;
+        
+        a = [Stats.sessIndx; Stats.sessIndx];
+        b = [Stats.sessN; Stats.sessN];
+        
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([a b],[Stats.psc_untrain;Stats.psc_train],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
+            ylim([0 2])
+            if f==1
+                ylabel('Percent signal change')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+        
+        
+        figure
+        for f = 1:numel(roi)
+            subplot(1,numel(roi),f);
+            lineplot([a b],[Stats.surfdist_untrain;Stats.surfdist_train],'split',[ones(length(Stats.sessN),1);ones(length(Stats.sessN),1)*2],'style_thickline','subset',[Stats.roi;Stats.roi]==f,'leg',{'untrained','trained'});
+            ylim([-0.002 0.002])
+            if f==1
+                ylabel('Distances')
+            else
+                ylabel('')
+            end
+            title(sprintf('%s',regname{f}))
+        end
+      
+        
+        keyboard;
+       
     case 'SURF_dist'
         % number of vertices above a certain threshold
         vararginoptions(varargin,{'sn'});
@@ -4446,4 +5117,39 @@ if ~exist(dir,'dir');
     %warning('%s didn''t exist, so this directory was created.\n',dir);
     mkdir(dir);
 end
+end
+function A = analytic_cov(th)
+
+    A.var_tr_s1r1    = th.a^2 + th.b1^2 + th.c1^2 + th.d1^2;
+    A.var_untr_s1r1  = th.a^2 + th.b2^2 + th.c1^2 + th.d1^2;
+    A.var_tr_s1r2    = th.a^2 + th.b1^2 + th.c1^2 + th.d2^2;
+    A.var_untr_s1r2  = th.a^2 + th.b2^2 + th.c1^2 + th.d2^2;
+    A.var_tr_s2r1    = th.a^2 + th.b1^2 + th.c2^2 + th.d3^2;
+    A.var_untr_s2r1  = th.a^2 + th.b2^2 + th.c2^2 + th.d3^2;
+    A.var_tr_s2r2    = th.a^2 + th.b1^2 + th.c2^2 + th.d4^2;
+    A.var_untr_s2r2  = th.a^2 + th.b2^2 + th.c2^2 + th.d4^2;
+   
+    A.seqType = [1;2];
+    A.cov_with1(1,:) = th.a^2 + th.b1^2 + th.c1^2;
+    A.cov_with1(2,:) = th.a^2 + th.b2^2 + th.c1^2;
+    A.cov_with2(1,:) = th.a^2 + th.b1^2 + th.c2^2;
+    A.cov_with2(2,:) = th.a^2 + th.b2^2 + th.c2^2;
+    A.corr_with1(1,:) = A.cov_with1(1,:)/sqrt(A.var_tr_s1r1*A.var_tr_s1r2);
+    A.corr_with1(2,:) = A.cov_with1(1,:)/sqrt(A.var_untr_s1r1*A.var_untr_s1r2);
+    A.corr_with2(1,:) = A.cov_with2(1,:)/sqrt(A.var_tr_s2r1*A.var_tr_s2r2);
+    A.corr_with2(2,:) = A.cov_with2(1,:)/sqrt(A.var_untr_s2r1*A.var_untr_s2r2);
+    
+    A.cov_acr(1,:) = th.a^2 + th.b1^2;
+    A.cov_acr(2,:) = th.a^2 + th.b2^2;
+    corr_train_acr = [A.cov_acr(1,:)/sqrt(A.var_tr_s1r1*A.var_tr_s2r1),...
+                       A.cov_acr(1,:)/sqrt(A.var_tr_s1r1*A.var_tr_s2r2),...
+                       A.cov_acr(1,:)/sqrt(A.var_tr_s1r2*A.var_tr_s2r1),...
+                       A.cov_acr(1,:)/sqrt(A.var_tr_s1r2*A.var_tr_s2r2)];
+    corr_untrain_acr = [A.cov_acr(1,:)/sqrt(A.var_untr_s1r1*A.var_untr_s2r1),...
+                         A.cov_acr(1,:)/sqrt(A.var_untr_s1r1*A.var_untr_s2r2),...
+                         A.cov_acr(1,:)/sqrt(A.var_untr_s1r2*A.var_untr_s2r1),...
+                         A.cov_acr(1,:)/sqrt(A.var_untr_s1r2*A.var_untr_s2r2)];
+    A.corr_acr(1,:) = mean(corr_train_acr);
+    A.corr_acr(2,:) = mean(corr_untrain_acr);
+    
 end
